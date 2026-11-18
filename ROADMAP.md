@@ -28,6 +28,7 @@ icloud-mcp ist der iCloud-Zugang ohne Mac: Kalender ueber CalDAV, Kontakte ueber
 - Integrationstests gegen echtes iCloud brauchen Zugangsdaten. Die gibt es in Cloud-Sessions nicht. Dort nur Unit-Tests.
 - **Zugangsdaten nie ins Repo, in Logs oder in den Chat.** Sie liegen auf dem Rechner in `~/.config/icloud-mcp/` (`email`, `mail_address`, `password`, je `chmod 600`, app-spezifisches Apple-Passwort) und werden vom Besitzer selbst angelegt.
 - **Upstream nicht blind nachziehen.** Upstream mergt Dependabot-Updates automatisch. Vor dem Merge von `upstream/main` die neuen Commits und Abhaengigkeiten ansehen.
+- **Keine Interaktion mit upstream (Entscheid Yanik 18.11.2026):** Claude oeffnet keine PRs, Issues oder Kommentare im Upstream-Repo und beteiligt sich nicht an Diskussionen dort. Upstream-PRs macht Yanik selbst. Claude bereitet hoechstens Branches im Fork vor (von `upstream/main` abgezweigt, ohne ROADMAP).
 - Eine Aenderung pro Branch. PRs fuer upstream auf Englisch und vom aktuellen `upstream/main` abzweigen. Diese `ROADMAP.md` nicht in Upstream-PRs mitnehmen.
 - Nach jedem erledigten Schritt hier den Status nachfuehren ([x] + Datum).
 
@@ -78,5 +79,5 @@ Beide gehoeren zur Gruppe `mail.mutate` und fallen bei `ICLOUD_MCP_READ_ONLY=tru
 
 Naechste Schritte dazu:
 1. Auf dem Linux-Rechner gegen echtes iCloud testen (Testordner anlegen, 2-3 Mails hin und zurueck verschieben), erst danach `mail.mutate` freischalten.
-2. Upstream-PRs vorbereiten: je ein PR von `feat/create-mailbox` und `feat/move-messages` (beide von `upstream/main` abgezweigt, ohne ROADMAP). Erst nach dem Test und Yaniks OK oeffnen.
+2. Upstream-PRs: Die Branches `feat/create-mailbox` und `feat/move-messages` sind dafuer vorbereitet (von `upstream/main` abgezweigt, ohne ROADMAP). Oeffnen macht Yanik selbst, nicht Claude.
 
