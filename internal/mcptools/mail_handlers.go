@@ -215,6 +215,33 @@ func moveMessageHandler(deps MailDeps) server.ToolHandlerFunc {
 	}
 }
 
+func createMailboxHandler(deps MailDeps) server.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		const tool = "create_mailbox"
+		args, err := mailArguments(req, mailKeySet("name"))
+		if err != nil {
+			mailAudit(deps, tool, "mailbox", "invalid", "denied")
+			return mailValidationResult(deps, err), nil
+		}
+		name, err := mailRequiredMailbox(args, "name")
+		if err != nil {
+			mailAudit(deps, tool, "mailbox", "invalid", "denied")
+			return mailValidationResult(deps, err), nil
+		}
+		if err := authorizeMailbox(deps.ResourceScopes, "mail.mutate", name); err != nil {
+			mailAudit(deps, tool, "mailbox", name, "denied")
+			return mailValidationResult(deps, err), nil
+		}
+		result, err := deps.Service.CreateMailbox(ctx, maildomain.CreateMailboxInput{Name: name})
+		if err != nil {
+			mailAudit(deps, tool, "mailbox", name, mailAuditErrorStatus(err))
+			return mailServiceErrorResult(deps, "creating mailbox", err), nil
+		}
+		mailAudit(deps, tool, "mailbox", name, "success")
+		return writeJSON(mailRedactor(deps), result), nil
+	}
+}
+
 func trashMessageHandler(deps MailDeps) server.ToolHandlerFunc {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		const tool = "trash_message"

@@ -188,6 +188,23 @@ type MoveResult struct {
 	Method                 string `json:"method"`
 }
 
+type CreateMailboxInput struct {
+	Name string `json:"name"`
+}
+
+// CreateMailboxResult reports the mailbox after CREATE. Created is false when
+// a selectable mailbox with the exact name already existed and nothing was
+// sent to the server.
+type CreateMailboxResult struct {
+	Name       string   `json:"name"`
+	Delimiter  string   `json:"delimiter,omitempty"`
+	Attributes []string `json:"attributes,omitempty"`
+	Created    bool     `json:"created"`
+	// ResultIncomplete is true when CREATE succeeded but the follow-up LIST
+	// did not return the new mailbox.
+	ResultIncomplete bool `json:"resultIncomplete,omitempty"`
+}
+
 type SendInput struct {
 	To             []string `json:"to"`
 	Cc             []string `json:"cc,omitempty"`
@@ -237,6 +254,7 @@ type Service interface {
 	SetMessageFlags(ctx context.Context, input SetFlagsInput) (SetFlagsResult, error)
 	MoveMessage(ctx context.Context, input MoveInput) (MoveResult, error)
 	TrashMessage(ctx context.Context, input TrashInput) (MoveResult, error)
+	CreateMailbox(ctx context.Context, input CreateMailboxInput) (CreateMailboxResult, error)
 	SendMessage(ctx context.Context, input SendInput) (SendResult, error)
 	ReplyMessage(ctx context.Context, input ReplyInput) (SendResult, error)
 }

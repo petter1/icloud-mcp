@@ -68,28 +68,29 @@ func contractSMTPTrust() error {
 }
 
 type contractMailBackend struct {
-	mu                                                      sync.Mutex
-	imapDials, smtpDials, stores, moves, appends, data, tls int
-	commands                                                []string
-	payloads, archived                                      [][]byte
-	recipients                                              []string
-	flags                                                   string
-	policy                                                  string
-	source, destination                                     string
-	validity                                                uint64
-	htmlOnly                                                bool
-	body                                                    string
-	messageCount                                            int
-	rejectIMAP, rejectSMTPAuth                              bool
-	condstore, malformedStore                               bool
-	modseq                                                  uint64
-	errors                                                  []string
+	mu                                                               sync.Mutex
+	imapDials, smtpDials, stores, moves, appends, data, tls, creates int
+	created                                                          []string
+	commands                                                         []string
+	payloads, archived                                               [][]byte
+	recipients                                                       []string
+	flags                                                            string
+	policy                                                           string
+	source, destination                                              string
+	validity                                                         uint64
+	htmlOnly                                                         bool
+	body                                                             string
+	messageCount                                                     int
+	rejectIMAP, rejectSMTPAuth                                       bool
+	condstore, malformedStore                                        bool
+	modseq                                                           uint64
+	errors                                                           []string
 }
 
 func (b *contractMailBackend) snapshot() map[string]any {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return map[string]any{"imap": b.imapDials, "smtp": b.smtpDials, "stores": b.stores, "moves": b.moves, "appends": b.appends, "data": b.data, "tls": b.tls, "commands": append([]string(nil), b.commands...), "errors": append([]string(nil), b.errors...)}
+	return map[string]any{"imap": b.imapDials, "smtp": b.smtpDials, "stores": b.stores, "moves": b.moves, "creates": b.creates, "appends": b.appends, "data": b.data, "tls": b.tls, "commands": append([]string(nil), b.commands...), "errors": append([]string(nil), b.errors...)}
 }
 
 func (b *contractMailBackend) service(t *testing.T) *maildomain.Client {
@@ -289,6 +290,11 @@ func (b *contractMailBackend) serveIMAP(conn net.Conn) error {
 			if destination == "" {
 				destination = "Archive"
 			}
+			b.mu.Lock()
+			for _, name := range b.created {
+				response = "* LIST () \"/\" \"" + name + "\"\r\n" + response
+			}
+			b.mu.Unlock()
 			response = "* LIST () \"/\" \"" + source + "\"\r\n* LIST () \"/\" \"" + destination + "\"\r\n* LIST (\\Trash) \"/\" \"Trash\"\r\n* LIST (\\Sent) \"/\" \"Sent\"\r\n" + response
 		case f[1] == "SELECT" || f[1] == "EXAMINE":
 			validity := b.validity
@@ -392,6 +398,12 @@ func (b *contractMailBackend) serveIMAP(conn net.Conn) error {
 			b.moves++
 			b.mu.Unlock()
 			response = tag + " OK [COPYUID 10 " + uid + " 4] moved\r\n"
+		case f[1] == "CREATE":
+			name := strings.Trim(strings.TrimPrefix(line, f[0]+" CREATE "), "\"\r\n")
+			b.mu.Lock()
+			b.creates++
+			b.created = append(b.created, name)
+			b.mu.Unlock()
 		case f[1] == "APPEND":
 			start := strings.LastIndex(line, "{")
 			end := strings.LastIndex(line, "}")
