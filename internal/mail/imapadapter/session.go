@@ -730,6 +730,13 @@ func (s *Session) AddDeleted(uid uint32) error {
 	return classify(err, true)
 }
 
+// CreateMailbox sends one CREATE for an exact mailbox name. The caller
+// validates the name and checks the LIST result first.
+func (s *Session) CreateMailbox(name string) error {
+	err := s.client.Create(name, nil).Wait()
+	return classify(err, true)
+}
+
 func (s *Session) UIDExpunge(uid uint32) error {
 	if !s.caps.UIDPlus {
 		return &Error{Kind: ErrorProtocol}

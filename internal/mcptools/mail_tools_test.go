@@ -48,6 +48,10 @@ type mailToolsFakeService struct {
 	replyErr     error
 	replyInput   maildomain.ReplyInput
 	replyCalls   int
+	createResult maildomain.CreateMailboxResult
+	createErr    error
+	createInput  maildomain.CreateMailboxInput
+	createCalls  int
 }
 
 func (f *mailToolsFakeService) ListMailboxes(context.Context) (maildomain.ListMailboxesResult, error) {
@@ -82,6 +86,12 @@ func (f *mailToolsFakeService) TrashMessage(_ context.Context, input maildomain.
 	f.trashCalls++
 	f.trashInput = input
 	return f.trashResult, f.trashErr
+}
+
+func (f *mailToolsFakeService) CreateMailbox(_ context.Context, input maildomain.CreateMailboxInput) (maildomain.CreateMailboxResult, error) {
+	f.createCalls++
+	f.createInput = input
+	return f.createResult, f.createErr
 }
 
 func (f *mailToolsFakeService) SendMessage(_ context.Context, input maildomain.SendInput) (maildomain.SendResult, error) {
@@ -149,9 +159,9 @@ func TestRegisterMailCombinations(t *testing.T) {
 		want      []string
 	}{
 		{"reads", false, false, []string{"list_mailboxes", "search_messages", "get_message"}},
-		{"mutations", true, false, []string{"list_mailboxes", "search_messages", "get_message", "set_message_flags", "move_message", "trash_message"}},
+		{"mutations", true, false, []string{"list_mailboxes", "search_messages", "get_message", "set_message_flags", "move_message", "create_mailbox", "trash_message"}},
 		{"send_independent", false, true, []string{"list_mailboxes", "search_messages", "get_message", "send_message", "reply_message"}},
-		{"all", true, true, []string{"list_mailboxes", "search_messages", "get_message", "set_message_flags", "move_message", "trash_message", "send_message", "reply_message"}},
+		{"all", true, true, []string{"list_mailboxes", "search_messages", "get_message", "set_message_flags", "move_message", "create_mailbox", "trash_message", "send_message", "reply_message"}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

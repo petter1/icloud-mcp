@@ -21,7 +21,7 @@ func TestContractRealServiceErrors(t *testing.T) {
 					f.contacts.failureStatus = 403
 				case name == "send_message" || name == "reply_message":
 					f.mail.rejectSMTPAuth = true
-				case strings.Contains(name, "message") || name == "list_mailboxes":
+				case strings.Contains(name, "message") || name == "list_mailboxes" || name == "create_mailbox":
 					f.mail.rejectIMAP = true
 				default:
 					f.calendar.failureStatus = 403
@@ -38,7 +38,7 @@ func TestContractRealServiceErrors(t *testing.T) {
 			payload := contractPayload(t, result)
 			code, _ := payload["code"].(string)
 			expected := "authorization"
-			if strings.Contains(name, "message") || name == "list_mailboxes" {
+			if strings.Contains(name, "message") || name == "list_mailboxes" || name == "create_mailbox" {
 				expected = "authentication"
 			}
 			if name == "validate_event" {
@@ -51,7 +51,7 @@ func TestContractRealServiceErrors(t *testing.T) {
 				t.Fatal("secret leaked")
 			}
 			f.mail.mu.Lock()
-			mutations := f.mail.data + f.mail.stores + f.mail.moves + f.mail.appends
+			mutations := f.mail.data + f.mail.stores + f.mail.moves + f.mail.creates + f.mail.appends
 			f.mail.mu.Unlock()
 			if f.calendar.mutations != 0 || f.contacts.mutations != 0 || mutations != 0 {
 				t.Fatal("refused service operation mutated")

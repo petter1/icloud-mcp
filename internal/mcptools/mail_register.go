@@ -41,6 +41,7 @@ func RegisterMail(s *server.MCPServer, deps MailDeps, allowRead, allowMutations,
 		registrations = append(registrations,
 			registration{newSetMessageFlagsTool(), setMessageFlagsHandler(deps)},
 			registration{newMoveMessageTool(), moveMessageHandler(deps)},
+			registration{newCreateMailboxTool(), createMailboxHandler(deps)},
 		)
 	}
 	if allowTrash {
@@ -138,6 +139,18 @@ func newMoveMessageTool() mcp.Tool {
 		mailUint32Property("uid_validity", "Expected source UIDVALIDITY", true),
 		mailUint32Property("uid", "Non-zero source message UID", true),
 		mailMailboxProperty("destination", "Selectable non-Trash and non-Junk destination returned by list_mailboxes", true),
+	)
+}
+
+func newCreateMailboxTool() mcp.Tool {
+	return mcp.NewTool("create_mailbox",
+		mcp.WithOutputSchema[maildomain.CreateMailboxResult](),
+		mcp.WithDescription("Creates one iCloud Mail mailbox with an exact name, for example a folder for sorted messages. If a selectable mailbox with the exact name already exists, it returns created=false and sends nothing. Nested names use the server's hierarchy delimiter from list_mailboxes, and the parent mailbox must already exist. It rejects INBOX, LIST wildcards, padded names, and names that differ from an existing mailbox only in letter case. It never deletes or renames mailboxes. Ambiguous outcomes require reconciliation with list_mailboxes and are never automatically retried."),
+		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(true),
+		mcp.WithDestructiveHintAnnotation(false),
+		mcp.WithSchemaAdditionalProperties(false),
+		mailMailboxProperty("name", "Exact new mailbox name; nested names use the delimiter returned by list_mailboxes", true),
 	)
 }
 
