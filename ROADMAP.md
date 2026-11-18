@@ -1,0 +1,65 @@
+# Roadmap des Forks petter1/icloud-mcp
+
+Diese Datei gilt nur für den Fork. Sie soll reichen, damit eine Session ohne Vorwissen weiterarbeiten kann.
+
+- Fork: https://github.com/petter1/icloud-mcp (`origin`)
+- Upstream: https://github.com/ThomasCrouzet/icloud-mcp (`upstream`), MIT, Go ≥ 1.26, ein Hauptautor, aktiv (v1.1.0 vom 09.11.2026)
+- Stand 18.11.2026: Fork liegt **12 Commits hinter `upstream/main`** und hat ausser dieser Roadmap keine eigenen Änderungen
+- Schwesterprojekt: https://github.com/petter1/orchard-mcp (TypeScript + Swift, macOS-Apps, siehe dort `ROADMAP.md`)
+
+## Ziel und Rolle
+
+icloud-mcp ist der iCloud-Zugang ohne Mac: Kalender über CalDAV, Kontakte über CardDAV, Mail über IMAP/SMTP. Der Fork wird lokal gebaut und verbessert. Gute Änderungen gehen als PR an upstream.
+
+**Entscheid 18.11.2026:** icloud-mcp wird auf Linux **als Backend für Orchard** eingebunden. Orchard (`petter1/orchard-mcp`) startet icloud-mcp als Kindprozess und reicht Kalender-, Kontakt- und Mail-Aufrufe weiter. Daraus folgt für diesen Fork:
+
+- **Nah am Upstream bleiben.** Eigene Änderungen klein halten und möglichst upstream anbieten, damit `upstream/main` sauber nachgezogen werden kann. Kein Umbau auf Orchard-spezifische Formate.
+- **Mail-Tools so bauen, dass Orchard sie 1:1 abbilden kann.** Das betrifft `create_mailbox` und Batch-Move mit neuen UIDs. Gleiche Bedeutung wie die geplanten Orchard-Tools `mail_create_mailbox` und `mail_move`.
+- Verworfen: den Code in Orchard übernehmen (Go → TypeScript). Dann fielen Upstream-Updates und Sicherheitsfixes weg.
+
+## Arbeitsregeln für Sessions
+
+- Bauen/testen: `go build ./...`, `go test ./...`, Binary per `go install ./cmd/icloud-mcp`. Weitere Ziele im `Makefile`.
+- Integrationstests gegen echtes iCloud brauchen Zugangsdaten. Die gibt es in Cloud-Sessions nicht. Dort nur Unit-Tests.
+- **Zugangsdaten nie ins Repo, in Logs oder in den Chat.** Sie liegen auf dem Rechner in `~/.config/icloud-mcp/` (`email`, `mail_address`, `password`, je `chmod 600`, app-spezifisches Apple-Passwort) und werden vom Besitzer selbst angelegt.
+- **Upstream nicht blind nachziehen.** Upstream mergt Dependabot-Updates automatisch. Vor dem Merge von `upstream/main` die neuen Commits und Abhängigkeiten ansehen.
+- Eine Änderung pro Branch. PRs für upstream auf Englisch und vom aktuellen `upstream/main` abzweigen. Diese `ROADMAP.md` nicht in Upstream-PRs mitnehmen.
+- Nach jedem erledigten Schritt hier den Status nachführen (✅ + Datum).
+
+## Stand Nutzung (Linux-Rechner, 13.11.2026)
+
+- Release-Binary v1.1.0 (linux-amd64) liegt unter `~/.local/bin/icloud-mcp`. Prüfsumme ok, Build durch GitHub Actions des Upstreams. Die Sigstore-Signatur ist nicht selbst geprüft (kein `cosign`).
+- In Claude Code als MCP `icloud` eingetragen, **nur lesend**: `ICLOUD_MCP_READ_ONLY=true`, Fähigkeiten `calendar.read,mail.read`, Kontakte aus, Zeitzone `Europe/Zurich`.
+- Noch offen: Zugangsdaten anlegen, `--doctor` laufen lassen, Lesen testen.
+
+## Code-Review 13.11.2026 (sicherheitsrelevante Teile)
+
+- Passwörter werden nur beim Start aus `file://`-Dateien gelesen: nur reguläre Dateien, Rechte ≤ 600, höchstens 4 KiB. Fehlermeldungen enthalten weder Pfad noch Passwort. Logs laufen durch einen Redactor.
+- Netzwerk nur zu Apple:
+  - HTTPS-Allowlist: `caldav.icloud.com`, `contacts.icloud.com` + `pNN-`-Shards, Port 443, keine Redirects.
+  - Mail fest auf `imap.mail.me.com:993` / `smtp.mail.me.com:587`, mit TLS-Prüfung.
+  - Keine Telemetrie, kein `exec`.
+- `READ_ONLY` entfernt alle Schreib-Tools zentral. Mail-Lesen nutzt `EXAMINE` + `PEEK`. Verschieben läuft per IMAP `MOVE`.
+- Risiko: kleines Projekt mit einem Autor und automatisch gemergten Dependabot-Updates. Deshalb aus dem Fork selbst bauen.
+
+## Verbesserungen
+
+| # | Lücke | Verbesserung | Phase |
+|---|---|---|---|
+| 1 | Mail nur iCloud (`imap.mail.me.com` fest im Code) | Weitere IMAP/SMTP-Konten konfigurierbar (eigene Domains). Allowlist pro Konto explizit, kein freies Host-Ziel. | 2 |
+| 2 | Mail-Ordner lassen sich nicht anlegen | `create_mailbox` | 2 |
+| 3 | Keine Reminders (neue iCloud-Reminders vermutlich nicht über CalDAV erreichbar) | Abklären, ob machbar. Sonst bleiben Reminders beim Mac/Orchard. | 3 |
+| 4 | `move_message` nur einzeln | Batch-Move mit Rückgabe der neuen UIDs | 2 |
+| 5 | Release-Binary aus fremder CI | Eigener Build aus dem Fork | 1 |
+
+## Phasen
+
+| Phase | Inhalt | Status |
+|---|---|---|
+| 1 Setup | Fork ✅ 13.11. · upstream geprüft nachziehen · Zugangsdaten anlegen, `--doctor`, Lesen testen · eigener Build (#5), Claude-Config auf eigenen Build umstellen | noch nicht eingeplant |
+| 2 Mail | #1, #2, #4 | noch nicht eingeplant |
+| 3 Abklären | #3 Reminders | noch nicht eingeplant |
+| 4 Abschluss | Tests, README, Upstream-PRs | noch nicht eingeplant |
+| 5 Anbindung Orchard | Zusammen mit Orchard Phase 5: Orchard startet icloud-mcp als Kindprozess (stdio), Tool-Zuordnung siehe `ROADMAP.md` im Orchard-Fork. Hier höchstens Kleinigkeiten nötig, z. B. stabile, maschinenlesbare Antworten. | nach Orchard Phase 1–4, frühestens 2027 |
+
+Phase 1 ist Voraussetzung für Orchard Phase 5.
