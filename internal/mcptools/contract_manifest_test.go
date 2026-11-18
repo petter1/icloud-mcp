@@ -42,7 +42,7 @@ func contractProfiles(t *testing.T) []contractProfile {
 		{"contacts-only", "", replyScopePlan(t, "contacts.read,contacts.write,contacts.delete", false)},
 		{"mail-only", "", replyScopePlan(t, "mail.read,mail.mutate,mail.trash,mail.send,mail.archive", false)},
 		{"send-only", "", replyScopePlan(t, "mail.send", false)},
-		{"mixed-scoped", "calendar.read=/cal/allowed/;contacts.read=allowed-book;mail.read=INBOX;mail.mutate=INBOX,Archive;mail.archive=Sent",
+		{"mixed-scoped", "calendar.read=/cal/allowed/;contacts.read=allowed-book;mail.read=INBOX;mail.mutate=INBOX,Archive,Synthetic folder;mail.archive=Sent",
 			replyScopePlan(t, "calendar.read,contacts.read,mail.read,mail.mutate,mail.send,mail.archive", false)},
 		{"all-enabled", "", NewCapabilityPlan(false, true, true, true, true)},
 		{"all-read-only", "", NewCapabilityPlan(true, true, true, true, true)},
