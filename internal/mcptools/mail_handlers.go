@@ -215,6 +215,92 @@ func moveMessageHandler(deps MailDeps) server.ToolHandlerFunc {
 	}
 }
 
+func moveMessagesHandler(deps MailDeps) server.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		const tool = "move_messages"
+		args, err := mailArguments(req, mailKeySet("mailbox", "uid_validity", "uids", "destination"))
+		if err != nil {
+			mailAudit(deps, tool, "message", "invalid", "denied")
+			return mailValidationResult(deps, err), nil
+		}
+		mailbox, err := mailRequiredMailbox(args, "mailbox")
+		if err != nil {
+			mailAudit(deps, tool, "message", "invalid", "denied")
+			return mailValidationResult(deps, err), nil
+		}
+		uidValidity, err := mailRequiredUint32(args, "uid_validity")
+		if err != nil {
+			mailAudit(deps, tool, "message", mailAuditResource(args), "denied")
+			return mailValidationResult(deps, err), nil
+		}
+		uids, err := mailUint32List(args, "uids", maildomain.MaxMoveBatch)
+		if err != nil {
+			mailAudit(deps, tool, "message", mailAuditResource(args), "denied")
+			return mailValidationResult(deps, err), nil
+		}
+		resource := mailbox + "\x00" + strconv.FormatUint(uint64(uidValidity), 10) + "\x00batch:" + strconv.Itoa(len(uids))
+		destination, err := mailRequiredMailbox(args, "destination")
+		if err != nil {
+			mailAudit(deps, tool, "message", resource, "denied")
+			return mailValidationResult(deps, err), nil
+		}
+		if destination == mailbox {
+			mailAudit(deps, tool, "message", resource, "denied")
+			return mailValidationResult(deps, fmt.Errorf("destination must differ from mailbox")), nil
+		}
+		if err := authorizeMailbox(deps.ResourceScopes, "mail.mutate", mailbox); err != nil {
+			mailAudit(deps, tool, "message", resource, "denied")
+			return mailValidationResult(deps, err), nil
+		}
+		if err := authorizeMailbox(deps.ResourceScopes, "mail.mutate", destination); err != nil {
+			mailAudit(deps, tool, "message", resource, "denied")
+			return mailValidationResult(deps, err), nil
+		}
+		result, err := deps.Service.MoveMessages(ctx, maildomain.MoveBatchInput{
+			Mailbox: mailbox, UIDValidity: uidValidity, UIDs: uids, Destination: destination,
+		})
+		if err != nil {
+			mailAudit(deps, tool, "message", resource, mailAuditErrorStatus(err))
+			return mailServiceErrorResult(deps, "moving messages", err), nil
+		}
+		status := "success"
+		if !result.Complete {
+			status = "partial_failure"
+		}
+		mailAudit(deps, tool, "message", resource, status)
+		return writeJSON(mailRedactor(deps), result), nil
+	}
+}
+
+func mailUint32List(args map[string]any, name string, maxItems int) ([]uint32, error) {
+	raw, present := args[name]
+	if !present {
+		return nil, fmt.Errorf("%s is required", name)
+	}
+	items, ok := raw.([]any)
+	if !ok {
+		return nil, fmt.Errorf("%s must be an array of unsigned 32-bit integers", name)
+	}
+	if len(items) == 0 || len(items) > maxItems {
+		return nil, fmt.Errorf("%s must contain 1 to %d items", name, maxItems)
+	}
+	out := make([]uint32, 0, len(items))
+	seen := make(map[uint32]struct{}, len(items))
+	for _, item := range items {
+		value, err := mailUnsigned(item, 32)
+		if err != nil || value == 0 {
+			return nil, fmt.Errorf("%s must contain non-zero unsigned 32-bit integers", name)
+		}
+		uid := uint32(value)
+		if _, duplicate := seen[uid]; duplicate {
+			return nil, fmt.Errorf("%s must be unique", name)
+		}
+		seen[uid] = struct{}{}
+		out = append(out, uid)
+	}
+	return out, nil
+}
+
 func trashMessageHandler(deps MailDeps) server.ToolHandlerFunc {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		const tool = "trash_message"
