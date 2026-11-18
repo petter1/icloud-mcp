@@ -36,6 +36,11 @@ func contractBoundValue(property contractProperty, keyword string, number json.N
 			all := []any{"seen", "flagged", "answered"}
 			copy(out, all)
 		}
+		if property.path[0] == "uids" {
+			for i := range out {
+				out[i] = i + 2
+			}
+		}
 		if property.path[0] == "to" || property.path[0] == "cc" || property.path[0] == "bcc" {
 			for i := range out {
 				out[i] = fmt.Sprintf("r%02d@example.invalid", i)

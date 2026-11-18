@@ -53,6 +53,10 @@ type mailToolsFakeService struct {
 	createErr    error
 	createInput  maildomain.CreateMailboxInput
 	createCalls  int
+	batchResult  maildomain.MoveBatchResult
+	batchErr     error
+	batchInput   maildomain.MoveBatchInput
+	batchCalls   int
 }
 
 func (f *mailToolsFakeService) ListMailboxes(context.Context) (maildomain.ListMailboxesResult, error) {
@@ -93,6 +97,12 @@ func (f *mailToolsFakeService) CreateMailbox(_ context.Context, input maildomain
 	f.createCalls++
 	f.createInput = input
 	return f.createResult, f.createErr
+}
+
+func (f *mailToolsFakeService) MoveMessages(_ context.Context, input maildomain.MoveBatchInput) (maildomain.MoveBatchResult, error) {
+	f.batchCalls++
+	f.batchInput = input
+	return f.batchResult, f.batchErr
 }
 
 func (f *mailToolsFakeService) SendMessage(_ context.Context, input maildomain.SendInput) (maildomain.SendResult, error) {
@@ -166,9 +176,9 @@ func TestRegisterMailCombinations(t *testing.T) {
 		want      []string
 	}{
 		{"reads", false, false, []string{"list_mailboxes", "search_messages", "get_message"}},
-		{"mutations", true, false, []string{"list_mailboxes", "search_messages", "get_message", "set_message_flags", "move_message", "create_mailbox", "trash_message"}},
+		{"mutations", true, false, []string{"list_mailboxes", "search_messages", "get_message", "set_message_flags", "move_message", "create_mailbox", "move_messages", "trash_message"}},
 		{"send_independent", false, true, []string{"list_mailboxes", "search_messages", "get_message", "send_message", "reply_message"}},
-		{"all", true, true, []string{"list_mailboxes", "search_messages", "get_message", "set_message_flags", "move_message", "create_mailbox", "trash_message", "send_message", "reply_message"}},
+		{"all", true, true, []string{"list_mailboxes", "search_messages", "get_message", "set_message_flags", "move_message", "create_mailbox", "move_messages", "trash_message", "send_message", "reply_message"}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -589,4 +599,38 @@ func mailToolsContains(values []string, wanted string) bool {
 		}
 	}
 	return false
+}
+
+func TestMoveMessagesHandlerValidatesUIDsAndPassesPartialResult(t *testing.T) {
+	service := &mailToolsFakeService{batchResult: maildomain.MoveBatchResult{
+		Mailbox: "INBOX", UIDValidity: 7, Destination: "Archive",
+		Moved:        []maildomain.MovedMessage{{UID: 3, DestinationUIDValidity: 9, DestinationUID: 40, Method: "move"}},
+		Failed:       &maildomain.MoveBatchFailure{UID: 4, Code: maildomain.CodeOutcomeUnknown, Message: "mail move outcome is unknown"},
+		NotAttempted: []uint32{5},
+	}}
+	deps := mailToolsDeps(service)
+	for _, raw := range []string{
+		`{"mailbox":"INBOX","uid_validity":7,"uids":[],"destination":"Archive"}`,
+		`{"mailbox":"INBOX","uid_validity":7,"uids":[3,3],"destination":"Archive"}`,
+		`{"mailbox":"INBOX","uid_validity":7,"uids":[0],"destination":"Archive"}`,
+		`{"mailbox":"INBOX","uid_validity":7,"uids":[4294967296],"destination":"Archive"}`,
+		`{"mailbox":"INBOX","uid_validity":7,"uids":"3","destination":"Archive"}`,
+		`{"mailbox":"INBOX","uid_validity":7,"uids":[3],"destination":"INBOX"}`,
+	} {
+		result, _ := moveMessagesHandler(deps)(t.Context(), mailToolsRawRequest(raw))
+		if !result.IsError || service.batchCalls != 0 {
+			t.Fatalf("invalid batch reached service: %s", raw)
+		}
+	}
+	result, _ := moveMessagesHandler(deps)(t.Context(), mailToolsRawRequest(`{"mailbox":"INBOX","uid_validity":7,"uids":[3,4,5],"destination":"Archive"}`))
+	if result.IsError || service.batchCalls != 1 {
+		t.Fatalf("valid batch failed: %s", mailToolsText(t, result))
+	}
+	if !reflect.DeepEqual(service.batchInput.UIDs, []uint32{3, 4, 5}) || service.batchInput.UIDValidity != 7 || service.batchInput.Destination != "Archive" {
+		t.Fatalf("batch input = %#v", service.batchInput)
+	}
+	payload := mailToolsJSON(t, result)
+	if payload["complete"] != false || payload["failed"] == nil || len(payload["moved"].([]any)) != 1 {
+		t.Fatalf("partial result lost: %#v", payload)
+	}
 }

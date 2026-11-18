@@ -36,6 +36,7 @@ MUTATION_TOOLS = {
     "set_message_flags",
     "move_message",
     "create_mailbox",
+    "move_messages",
     "trash_message",
     "send_message",
     "reply_message",

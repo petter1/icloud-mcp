@@ -120,7 +120,8 @@ error:
 - Calendar: `create_event`, `update_event`, `delete_event` are absent.
 - Contacts: `create_contact`, `update_contact`, `delete_contact` are absent.
 - Mail: `set_message_flags`, `move_message`, `create_mailbox`,
-  `trash_message`, `send_message`, and `reply_message` are absent.
+  `move_messages`, `trash_message`, `send_message`, and `reply_message` are
+  absent.
 
 Contacts read requires its enable flag. Mail read requires its enable flag.
 Contacts writes require `contacts.write` or `contacts.delete`. Mail mutation
