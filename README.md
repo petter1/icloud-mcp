@@ -100,7 +100,7 @@ without Calendar, Contacts, or Mail mutation tools.
 ## MCP tools
 
 The server registers **7 tools with the default read-only profile**, including
-the global capability tool, and **24 when explicit permissions and domain gates enable every capability**.
+the global capability tool, and **25 when explicit permissions and domain gates enable every capability**.
 Disabled tools are absent from discovery. The MCP interface provides tools over
 **stdio**.
 
@@ -490,7 +490,10 @@ Current limits to account for:
 - **Mail.** Message identity is `(mailbox, UIDVALIDITY, UID)`. Reads return
   plain text and attachment metadata, without HTML or attachment bodies.
   `move_message` rejects SPECIAL-USE Trash and Junk destinations; use
-  `trash_message` for intentional deletion. When CONDSTORE is advertised,
+  `trash_message` for intentional deletion. `move_messages` moves up to 50
+  UIDs from one mailbox with the same rules, returns the new destination UIDs
+  in request order, and stops at the first failure with `complete=false`.
+  When CONDSTORE is advertised,
   `set_message_flags` requires `expected_modseq`. The adapter sends one guarded
   UID STORE and proves the result from its tagged status and the returned
   FETCH. It reports `concurrent_modification` for a stale MODSEQ and

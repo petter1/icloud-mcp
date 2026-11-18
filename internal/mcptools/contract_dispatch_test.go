@@ -118,6 +118,7 @@ func contractBusinessFixtures() map[string]contractBusinessFixture {
 		"search_messages":   {map[string]any{"mailbox": "INBOX"}, map[string]any{"query": "Synthetic", "from": "reply", "to": "fixture", "subject": "Synthetic", "since": "2026-07-01", "before": "2026-07-03", "unseen_only": true, "flagged_only": true, "before_uid": 3, "uid_validity": 9, "limit": 1}},
 		"set_message_flags": {contractMerge(identity(), map[string]any{"operation": "add", "flags": []any{"seen"}}), map[string]any{"expected_modseq": 42}},
 		"move_message":      {contractMerge(identity(), map[string]any{"destination": "Archive"}), nil}, "trash_message": {identity(), nil},
+		"move_messages": {map[string]any{"mailbox": "INBOX", "uid_validity": 9, "uids": []any{2}, "destination": "Archive"}, nil},
 		"send_message":  {map[string]any{"to": []any{"recipient@example.invalid"}, "body": "Synthetic outgoing body"}, map[string]any{"cc": []any{"copy@example.invalid"}, "bcc": []any{"reply@example.invalid"}, "subject": "Synthetic subject", "idempotency_key": "send-key", "archive_sent": true}},
 		"reply_message": {contractMerge(identity(), map[string]any{"body": "Synthetic reply body"}), map[string]any{"mode": "reply_all", "idempotency_key": "reply-key"}},
 	}
@@ -258,6 +259,10 @@ func (f *contractRuntime) verify(t *testing.T, name string, args map[string]any,
 	case "move_message", "trash_message":
 		if f.mail.moves != 1 || payload["method"] != "move" {
 			t.Fatalf("no actual UID MOVE: %v", payload)
+		}
+	case "move_messages":
+		if f.mail.moves != len(args["uids"].([]any)) || payload["complete"] != true {
+			t.Fatalf("no actual UID MOVE per UID: %v", payload)
 		}
 	case "send_message", "reply_message":
 		if payload["status"] != "accepted" || f.mail.data != 1 || f.mail.tls != 1 {

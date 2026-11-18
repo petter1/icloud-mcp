@@ -35,6 +35,7 @@ MUTATION_TOOLS = {
     "delete_contact",
     "set_message_flags",
     "move_message",
+    "move_messages",
     "trash_message",
     "send_message",
     "reply_message",
