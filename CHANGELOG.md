@@ -6,6 +6,13 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- Add `create_mailbox` to the Mail mutation group (`mail.mutate`). It creates
+  one mailbox with an exact name and returns `created=false` without sending
+  CREATE when a selectable mailbox with that name exists. It rejects INBOX,
+  LIST wildcards, padded names, case-only collisions, and nested names whose
+  parent is missing. Read-only mode removes it like the other mutation tools.
+
 ## [1.2.0] - 2026-11-19
 
 This minor release adds an optional custom sender address for Mail and
