@@ -12,6 +12,13 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   CREATE when a selectable mailbox with that name exists. It rejects INBOX,
   LIST wildcards, padded names, case-only collisions, and nested names whose
   parent is missing. Read-only mode removes it like the other mutation tools.
+- Add `move_messages` to the Mail mutation group (`mail.mutate`). It moves 1 to
+  50 UIDs from one mailbox to one destination in a single IMAP session, with
+  the same destination rules as `move_message`. It checks that every UID
+  exists before the first move, returns the destination UID for each source
+  UID in request order, and stops at the first failure. A failure after an
+  earlier move returns `complete=false` with the failed UID and the UIDs that
+  were not attempted.
 
 ## [1.1.1] - 2026-11-15
 

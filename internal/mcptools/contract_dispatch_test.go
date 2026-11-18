@@ -121,6 +121,7 @@ func contractBusinessFixtures() map[string]contractBusinessFixture {
 		"create_mailbox": {map[string]any{"name": "Synthetic folder"}, nil},
 		"send_message":   {map[string]any{"to": []any{"recipient@example.invalid"}, "body": "Synthetic outgoing body"}, map[string]any{"cc": []any{"copy@example.invalid"}, "bcc": []any{"reply@example.invalid"}, "subject": "Synthetic subject", "idempotency_key": "send-key", "archive_sent": true}},
 		"reply_message":  {contractMerge(identity(), map[string]any{"body": "Synthetic reply body"}), map[string]any{"mode": "reply_all", "idempotency_key": "reply-key"}},
+		"move_messages":  {map[string]any{"mailbox": "INBOX", "uid_validity": 9, "uids": []any{2}, "destination": "Archive"}, nil},
 	}
 }
 
@@ -263,6 +264,10 @@ func (f *contractRuntime) verify(t *testing.T, name string, args map[string]any,
 	case "create_mailbox":
 		if f.mail.creates != 1 || payload["created"] != true {
 			t.Fatalf("no actual CREATE: %v", payload)
+		}
+	case "move_messages":
+		if f.mail.moves != len(args["uids"].([]any)) || payload["complete"] != true {
+			t.Fatalf("no actual UID MOVE per UID: %v", payload)
 		}
 	case "send_message", "reply_message":
 		if payload["status"] != "accepted" || f.mail.data != 1 || f.mail.tls != 1 {

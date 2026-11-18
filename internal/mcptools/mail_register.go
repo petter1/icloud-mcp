@@ -42,6 +42,7 @@ func RegisterMail(s *server.MCPServer, deps MailDeps, allowRead, allowMutations,
 			registration{newSetMessageFlagsTool(), setMessageFlagsHandler(deps)},
 			registration{newMoveMessageTool(), moveMessageHandler(deps)},
 			registration{newCreateMailboxTool(), createMailboxHandler(deps)},
+			registration{newMoveMessagesTool(), moveMessagesHandler(deps)},
 		)
 	}
 	if allowTrash {
@@ -151,6 +152,21 @@ func newCreateMailboxTool() mcp.Tool {
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithSchemaAdditionalProperties(false),
 		mailMailboxProperty("name", "Exact new mailbox name; nested names use the delimiter returned by list_mailboxes", true),
+	)
+}
+
+func newMoveMessagesTool() mcp.Tool {
+	return mcp.NewTool("move_messages",
+		mcp.WithOutputSchema[maildomain.MoveBatchResult](),
+		mcp.WithDescription("Moves 1 to 50 messages from one mailbox, identified by (mailbox, UIDVALIDITY, uids), to one selectable destination returned by list_mailboxes. It applies the move_message rules: SPECIAL-USE Trash and Junk destinations are rejected, and each UID uses native UID MOVE or the UIDPLUS-only safe fallback, never plain or mailbox-wide EXPUNGE. Every UID must exist before the first move. UIDs are moved one by one in request order and the result maps each source UID to its destination UID when the server returns COPYUID. The batch stops at the first failure: if nothing moved yet, the tool returns an error; otherwise complete=false names the failed UID and the UIDs that were not attempted. Partial or ambiguous outcomes require reconciliation and are never automatically retried."),
+		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
+		mcp.WithDestructiveHintAnnotation(true),
+		mcp.WithSchemaAdditionalProperties(false),
+		mailMailboxProperty("mailbox", "Source mailbox name returned by list_mailboxes", true),
+		mailUint32Property("uid_validity", "Expected source UIDVALIDITY", true),
+		mcp.WithArray("uids", mcp.Required(), mcp.MinItems(1), mcp.MaxItems(maildomain.MaxMoveBatch), mcp.UniqueItems(true), mcp.WithIntegerItems(mcp.Min(1), mailMaximum(uint64(^uint32(0)))), mcp.Description("1 to 50 unique non-zero source message UIDs, moved in this order")),
+		mailMailboxProperty("destination", "Selectable non-Trash and non-Junk destination returned by list_mailboxes", true),
 	)
 }
 

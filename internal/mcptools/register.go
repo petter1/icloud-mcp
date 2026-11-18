@@ -204,7 +204,7 @@ func (p CapabilityPlan) RegisteredTools() []string {
 		names = append(names, mailReadToolNames()...)
 	}
 	if p.mailMutate {
-		names = append(names, "set_message_flags", "move_message", "create_mailbox")
+		names = append(names, "set_message_flags", "move_message", "move_messages", "create_mailbox")
 	}
 	if p.mailTrash {
 		names = append(names, "trash_message")
