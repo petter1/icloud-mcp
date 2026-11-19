@@ -96,7 +96,7 @@ func TestIMAPDialerUsesVerifiedTLSWithFixedServerName(t *testing.T) {
 	}()
 
 	var gotNetwork, gotAddress string
-	dialer := newIMAPDialer(func(_ context.Context, network, address string) (net.Conn, error) {
+	dialer := newIMAPDialer(DefaultIMAPEndpoint, func(_ context.Context, network, address string) (net.Conn, error) {
 		gotNetwork, gotAddress = network, address
 		return client, nil
 	}, &tls.Config{RootCAs: roots})

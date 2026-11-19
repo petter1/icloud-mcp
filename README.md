@@ -42,7 +42,9 @@ isolation.
 
 - **Fixed destinations.** Calendar and Contacts use their iCloud hosts and
   validated shards on port 443. Mail uses `imap.mail.me.com:993` and
-  `smtp.mail.me.com:587`, with mandatory STARTTLS for SMTP. TLS 1.2 or later is
+  `smtp.mail.me.com:587` by default, or exactly one operator-configured IMAP
+  and SMTP server per process (`ICLOUD_MCP_IMAP_SERVER`,
+  `ICLOUD_MCP_SMTP_SERVER`), with mandatory STARTTLS for SMTP. TLS 1.2 or later is
   required. DAV ignores proxy environment variables.
 - **Redaction and audit.** The server redacts configured identities, passwords,
   and Basic/SASL forms from errors, results, and logs. Mutation audits contain
@@ -342,7 +344,7 @@ environment; its configuration format can differ. See
 <!-- readme:section configuration -->
 ## Configuration
 
-The binary reads exactly **15 product environment variables** from its process
+The binary reads exactly **17 product environment variables** from its process
 environment. It does not load `.env` files or host configuration files.
 [`.env.example`](.env.example) lists the supported keys. The host or launching
 shell must supply them; restart the process after a change.
@@ -364,6 +366,8 @@ shell must supply them; restart the process after a change.
 | `ICLOUD_MCP_ENABLE_MAIL_WRITE` | No | `false` | Compatibility gate only; Mail mutation requires `mail.mutate` or `mail.trash` |
 | `ICLOUD_MCP_ENABLE_MAIL_SEND` | No | `false` | Compatibility gate only; send requires `mail.send` and a recipient policy |
 | `ICLOUD_MCP_SMTP_ALLOWED_RECIPIENTS` | When send is requested | None | Comma-separated exact addresses, or literal `*` |
+| `ICLOUD_MCP_IMAP_SERVER` | No | `imap.mail.me.com:993` | Non-iCloud IMAP server (`host` or `host:port`, implicit TLS); the only permitted IMAP destination |
+| `ICLOUD_MCP_SMTP_SERVER` | No | `smtp.mail.me.com:587` | Non-iCloud SMTP submission server (`host` or `host:port`, STARTTLS, not 465); the only permitted SMTP destination |
 
 Boolean values accept unset, `0`, `false`, `1`, and `true`; the parser trims
 whitespace and ignores case. Invalid values fail before network access. Pass

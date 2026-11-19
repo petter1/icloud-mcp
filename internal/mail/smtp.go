@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/hex"
 	"errors"
 	"io"
@@ -31,6 +32,23 @@ const maxSMTPInboundBytes int64 = 1024 * 1024
 
 func newSMTPSession(ctx context.Context, conn net.Conn) (smtpSession, error) {
 	return newSMTPSessionWithTLS(ctx, conn, &tls.Config{ServerName: smtpHost, MinVersion: tls.VersionTLS12})
+}
+
+// smtpSessionFactoryFor verifies STARTTLS against serverName, or against the
+// iCloud submission host when serverName is empty.
+func smtpSessionFactoryFor(serverName string) smtpSessionFactory {
+	return smtpSessionFactoryWithRoots(serverName, nil)
+}
+
+// smtpSessionFactoryWithRoots is smtpSessionFactoryFor with injectable trust
+// roots for tests. Nil roots use the system pool.
+func smtpSessionFactoryWithRoots(serverName string, roots *x509.CertPool) smtpSessionFactory {
+	if serverName == "" {
+		serverName = smtpHost
+	}
+	return func(ctx context.Context, conn net.Conn) (smtpSession, error) {
+		return newSMTPSessionWithTLS(ctx, conn, &tls.Config{ServerName: serverName, RootCAs: roots, MinVersion: tls.VersionTLS12})
+	}
 }
 
 func newSMTPSessionWithTLS(ctx context.Context, conn net.Conn, tlsConfig *tls.Config) (smtpSession, error) {
