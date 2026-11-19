@@ -30,7 +30,9 @@ func TestSMTPSessionFactoryVerifiesConfiguredServerName(t *testing.T) {
 					t.Fatal("expected TLS verification failure for a mismatched server name")
 				}
 				_ = clientConn.Close()
-				<-serverErr
+				if err := <-serverErr; err == nil {
+					t.Fatal("server handshake should fail for a mismatched name")
+				}
 				return
 			}
 			if err != nil {
