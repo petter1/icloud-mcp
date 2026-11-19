@@ -78,7 +78,9 @@ func TestFullAddressSessionDoesNotRetryAfterRejection(t *testing.T) {
 	if err == nil || !IsLoginRejected(err) {
 		t.Fatalf("err = %v, want login rejection", err)
 	}
-	<-serverErr
+	if err := <-serverErr; err != nil {
+		t.Fatal(err)
+	}
 	var logins int
 	for {
 		select {
