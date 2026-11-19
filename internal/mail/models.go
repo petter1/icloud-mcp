@@ -36,6 +36,12 @@ type Config struct {
 	RecipientPolicy RecipientPolicy `json:"-"`
 	EnableSentCopy  bool            `json:"-"`
 	ArchiveScope    []string        `json:"-"`
+	// SMTPServerName is the TLS name verified after STARTTLS. Empty means the
+	// iCloud submission server.
+	SMTPServerName string `json:"-"`
+	// IMAPFullAddressLogin logs in with the full address only (non-iCloud
+	// servers). False keeps the iCloud local-part-first behavior.
+	IMAPFullAddressLogin bool `json:"-"`
 }
 
 // Mailbox is one bounded LIST response item. Delimiter is empty when the

@@ -396,13 +396,17 @@ func newOptionalServices(cfg *config.Config) (contacts.Service, maildomain.Servi
 			}
 		}
 
+		imapEndpoint := cfg.MailIMAPEndpoint()
+		smtpEndpoint := cfg.MailSMTPEndpoint()
+		imapDialer := security.NewIMAPEndpointDialer(imapEndpoint, (&net.Dialer{}).DialContext)
 		imapDial := func(ctx context.Context) (net.Conn, error) {
-			return security.DialIMAPContext(ctx, "tcp", security.IMAPAddress)
+			return imapDialer(ctx, "tcp", imapEndpoint.Address())
 		}
 		var smtpDial maildomain.SMTPDialFunc
 		if cfg.EffectiveMailSend() {
+			smtpDialer := security.NewSMTPEndpointDialer(smtpEndpoint, (&net.Dialer{}).DialContext)
 			smtpDial = func(ctx context.Context) (net.Conn, error) {
-				return security.DialSMTPContext(ctx, "tcp", security.SMTPAddress)
+				return smtpDialer(ctx, "tcp", smtpEndpoint.Address())
 			}
 		}
 		archiveScope, _ := cfg.ResourceScopes.Mail("mail.archive")
@@ -412,6 +416,10 @@ func newOptionalServices(cfg *config.Config) (contacts.Service, maildomain.Servi
 			RecipientPolicy: recipientPolicy,
 			EnableSentCopy:  capabilities.MailArchive,
 			ArchiveScope:    archiveScope,
+			SMTPServerName:  smtpEndpoint.Host,
+			// Non-iCloud servers expect the full address; skip the iCloud
+			// local-part attempt that would count as a failed login there.
+			IMAPFullAddressLogin: !imapEndpoint.IsICloud(),
 		}, imapDial, smtpDial, cfg.EffectiveMailWrite(), cfg.EffectiveMailSend())
 		if err != nil {
 			return nil, nil, fmt.Errorf("mail service initialization failed: %w", err)

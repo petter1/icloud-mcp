@@ -26,6 +26,14 @@ from building disabled optional clients.
 | Contacts | `contacts.icloud.com`, `p[0-9]{1,3}-contacts.icloud.com` | implicit or explicit 443 | HTTPS |
 | IMAP | `imap.mail.me.com` | 993 only | Implicit TLS |
 | SMTP | `smtp.mail.me.com` | 587 only | TCP upgraded by mandatory STARTTLS |
+| IMAP (custom) | exactly `ICLOUD_MCP_IMAP_SERVER` | its port (default 993) | Implicit TLS, verified against that name |
+| SMTP (custom) | exactly `ICLOUD_MCP_SMTP_SERVER` | its port (default 587, never 465) | Mandatory STARTTLS, verified against that name |
+
+A custom mail server replaces the iCloud Mail destination for that process; it
+does not add a second one. The value must be a DNS name with at least two
+labels; IP literals are rejected so TLS always verifies a host name. The
+setting is boot configuration only: no tool argument can change it. To use
+several mail accounts, run one process per account.
 
 Host matching uses case-sensitive equality with fixed lowercase production
 literals. Examples are `caldav.icloud.com` and `p12-caldav.icloud.com`. The

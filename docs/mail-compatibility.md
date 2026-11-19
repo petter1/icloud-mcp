@@ -21,6 +21,26 @@ The client uses fixed socket destinations. IMAP requires exactly
 system trust, fixed server names, and TLS 1.2 or later. The client does not
 enable protocol debug writers.
 
+## Other IMAP/SMTP servers
+
+`ICLOUD_MCP_IMAP_SERVER` and `ICLOUD_MCP_SMTP_SERVER` point one process at a
+different provider, for example a self-hosted Dovecot/Postfix server. Each
+value becomes the only destination for its protocol. TLS rules stay the same:
+IMAP uses implicit TLS, SMTP uses mandatory STARTTLS (port 465 is rejected),
+and the certificate must match the configured name.
+
+Differences from iCloud:
+
+- IMAP LOGIN uses the full address only. The iCloud local-part attempt is
+  skipped because it would count as a failed login on other servers.
+- Mailbox names and SPECIAL-USE attributes come from the server. Trash/Junk
+  detection and `trash_message` rely on SPECIAL-USE; a server without it fails
+  closed. `ICLOUD_MCP_RESOURCE_SCOPES` can still limit which mailboxes each
+  action may touch.
+- Run one process per account and register each as its own MCP server, for
+  example `mail-work` and `mail-label`, with `ICLOUD_MCP_PERMISSIONS=mail.read`
+  so that no Calendar or Contacts credentials are needed.
+
 ## Session lifecycle and authentication
 
 Each tool attempt opens a new socket. It closes the authenticated session after

@@ -49,6 +49,17 @@ type Session struct {
 // rejects the local part with an uncoded NO while accepting the full email
 // address with the same app-specific password.
 func NewSession(ctx context.Context, conn net.Conn, address, password string) (*Session, error) {
+	return newSession(ctx, conn, address, password, false)
+}
+
+// NewFullAddressSession authenticates with the full addr-spec only. Use it
+// for non-iCloud servers: a local-part attempt would be one failed login per
+// session there, which can trip brute-force protection such as fail2ban.
+func NewFullAddressSession(ctx context.Context, conn net.Conn, address, password string) (*Session, error) {
+	return newSession(ctx, conn, address, password, true)
+}
+
+func newSession(ctx context.Context, conn net.Conn, address, password string, fullAddressOnly bool) (*Session, error) {
 	deadline, bounded := ctx.Deadline()
 	clamped := &deadlineConn{Conn: conn, deadline: deadline}
 	if bounded {
@@ -74,7 +85,7 @@ func NewSession(ctx context.Context, conn net.Conn, address, password string) (*
 		return nil, classify(err, false)
 	}
 	local := address
-	if at := strings.LastIndexByte(address, '@'); at > 0 {
+	if at := strings.LastIndexByte(address, '@'); at > 0 && !fullAddressOnly {
 		local = address[:at]
 	}
 	err := client.Login(local, password).Wait()

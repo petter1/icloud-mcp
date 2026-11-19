@@ -15,6 +15,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/ThomasCrouzet/icloud-mcp/internal/security"
 )
 
 // icloudTimeout is the fixed HTTP timeout for all CalDAV requests.
@@ -365,6 +367,11 @@ type Config struct {
 	SMTPRecipientPolicy   RecipientPolicy // immutable exact-match policy for SMTP authorization
 	Timeout               time.Duration   // 30s constant
 	LogLevel              slog.Level      // ICLOUD_MCP_LOG_LEVEL (debug/info/warn/error), default info
+	// IMAPServer and SMTPServer are the optional non-iCloud mail servers
+	// (ICLOUD_MCP_IMAP_SERVER, ICLOUD_MCP_SMTP_SERVER). The zero value means
+	// iCloud. Each is the only permitted destination for its protocol.
+	IMAPServer security.MailEndpoint
+	SMTPServer security.MailEndpoint
 
 	// DefaultLocation is the timezone used to interpret a start/end value
 	// supplied WITHOUT an explicit RFC3339 offset (e.g. "2026-07-01T14:00:00",
@@ -451,6 +458,15 @@ func Load() (*Config, error) {
 		}
 	}
 
+	imapServer, err := ParseMailServer(imapServerEnvVar, os.Getenv(imapServerEnvVar), 993)
+	if err != nil {
+		return nil, err
+	}
+	smtpServer, err := ParseMailServer(smtpServerEnvVar, os.Getenv(smtpServerEnvVar), 587)
+	if err != nil {
+		return nil, err
+	}
+
 	var recipientPolicy RecipientPolicy
 	if strings.TrimSpace(os.Getenv(smtpAllowedRecipientsEnvVar)) != "" {
 		recipientPolicy, err = ParseRecipientPolicy(os.Getenv(smtpAllowedRecipientsEnvVar))
@@ -476,6 +492,8 @@ func Load() (*Config, error) {
 		Timeout:               icloudTimeout,
 		LogLevel:              parseLogLevel(os.Getenv("ICLOUD_MCP_LOG_LEVEL")),
 		DefaultLocation:       loc,
+		IMAPServer:            imapServer,
+		SMTPServer:            smtpServer,
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -577,7 +595,7 @@ func (c *Config) Validate() error {
 	if requestedSend && !policy.Configured() {
 		return fmt.Errorf("%s is required when mail send is requested", smtpAllowedRecipientsEnvVar)
 	}
-	return nil
+	return c.validateMailServers()
 }
 
 // EffectivePermissions returns the capability set after the global read-only

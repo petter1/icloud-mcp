@@ -40,8 +40,11 @@ var _ Service = (*Client)(nil)
 func NewService(config Config, imapDial IMAPDialFunc, smtpDial SMTPDialFunc, enableMutation, enableSend bool) (*Client, error) {
 	return newService(config, imapDial, smtpDial, enableMutation, enableSend,
 		func(ctx context.Context, conn net.Conn, address, password string) (imapSession, error) {
+			if config.IMAPFullAddressLogin {
+				return imapadapter.NewFullAddressSession(ctx, conn, address, password)
+			}
 			return imapadapter.NewSession(ctx, conn, address, password)
-		}, newSMTPSession)
+		}, smtpSessionFactoryFor(config.SMTPServerName))
 }
 
 func newService(config Config, imapDial IMAPDialFunc, smtpDial SMTPDialFunc, enableMutation, enableSend bool, imapFactory imapSessionFactory, smtpFactory smtpSessionFactory) (*Client, error) {

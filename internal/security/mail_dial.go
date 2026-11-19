@@ -7,16 +7,41 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
 )
 
 const (
-	// IMAPAddress is the only permitted IMAP endpoint.
+	// IMAPAddress is the default (iCloud) IMAP endpoint.
 	IMAPAddress = "imap.mail.me.com:993"
-	// SMTPAddress is the only permitted SMTP submission endpoint.
+	// SMTPAddress is the default (iCloud) SMTP submission endpoint.
 	SMTPAddress = "smtp.mail.me.com:587"
 
 	imapServerName = "imap.mail.me.com"
+	smtpServerName = "smtp.mail.me.com"
 )
+
+// MailEndpoint is one fixed mail server destination. A process allows exactly
+// one IMAP and one SMTP endpoint; there is no per-call destination.
+type MailEndpoint struct {
+	Host string
+	Port int
+}
+
+// DefaultIMAPEndpoint and DefaultSMTPEndpoint are the iCloud Mail servers.
+var (
+	DefaultIMAPEndpoint = MailEndpoint{Host: imapServerName, Port: 993}
+	DefaultSMTPEndpoint = MailEndpoint{Host: smtpServerName, Port: 587}
+)
+
+// Address returns host:port.
+func (e MailEndpoint) Address() string {
+	return net.JoinHostPort(e.Host, strconv.Itoa(e.Port))
+}
+
+// IsICloud reports whether the endpoint host is an iCloud Mail server.
+func (e MailEndpoint) IsICloud() bool {
+	return e.Host == imapServerName || e.Host == smtpServerName
+}
 
 // DialContextFunc is compatible with net.Dialer.DialContext and permits test
 // injection without making the production destination configurable.
@@ -86,25 +111,32 @@ func DialIMAPContext(ctx context.Context, network, address string) (net.Conn, er
 // NewIMAPDialer wraps an injected context dialer with the fixed endpoint and
 // verified implicit-TLS policy.
 func NewIMAPDialer(dial DialContextFunc) DialContextFunc {
-	return newIMAPDialer(dial, nil)
+	return newIMAPDialer(DefaultIMAPEndpoint, dial, nil)
 }
 
-func newIMAPDialer(dial DialContextFunc, tlsConfig *tls.Config) DialContextFunc {
+// NewIMAPEndpointDialer is NewIMAPDialer for one operator-configured endpoint.
+// Only endpoint.Address() is accepted, and TLS verifies endpoint.Host.
+func NewIMAPEndpointDialer(endpoint MailEndpoint, dial DialContextFunc) DialContextFunc {
+	return newIMAPDialer(endpoint, dial, nil)
+}
+
+func newIMAPDialer(endpoint MailEndpoint, dial DialContextFunc, tlsConfig *tls.Config) DialContextFunc {
+	allowed := endpoint.Address()
 	return func(ctx context.Context, network, address string) (net.Conn, error) {
-		if network != "tcp" || address != IMAPAddress {
+		if network != "tcp" || address != allowed || endpoint.Host == "" {
 			return nil, fmt.Errorf("network allowlist: IMAP destination rejected")
 		}
 		if dial == nil {
 			return nil, fmt.Errorf("network allowlist: IMAP dialer is unavailable")
 		}
 
-		raw, err := dial(ctx, "tcp", IMAPAddress)
+		raw, err := dial(ctx, "tcp", allowed)
 		if err != nil {
 			return nil, &imapFailure{stage: imapConnect, cause: err}
 		}
 		config := &tls.Config{
 			MinVersion: tls.VersionTLS12,
-			ServerName: imapServerName,
+			ServerName: endpoint.Host,
 		}
 		if tlsConfig != nil {
 			config.RootCAs = tlsConfig.RootCAs
@@ -129,13 +161,20 @@ func DialSMTPContext(ctx context.Context, network, address string) (net.Conn, er
 // NewSMTPDialer wraps an injected context dialer with the fixed SMTP endpoint
 // policy. Arbitrary addresses are rejected before invoking the dialer.
 func NewSMTPDialer(dial DialContextFunc) DialContextFunc {
+	return NewSMTPEndpointDialer(DefaultSMTPEndpoint, dial)
+}
+
+// NewSMTPEndpointDialer is NewSMTPDialer for one operator-configured endpoint.
+// The SMTP client must still require STARTTLS verified against endpoint.Host.
+func NewSMTPEndpointDialer(endpoint MailEndpoint, dial DialContextFunc) DialContextFunc {
+	allowed := endpoint.Address()
 	return func(ctx context.Context, network, address string) (net.Conn, error) {
-		if network != "tcp" || address != SMTPAddress {
+		if network != "tcp" || address != allowed || endpoint.Host == "" {
 			return nil, fmt.Errorf("network allowlist: SMTP destination rejected")
 		}
 		if dial == nil {
 			return nil, fmt.Errorf("network allowlist: SMTP dialer is unavailable")
 		}
-		return dial(ctx, "tcp", SMTPAddress)
+		return dial(ctx, "tcp", allowed)
 	}
 }
