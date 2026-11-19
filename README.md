@@ -42,7 +42,9 @@ isolation.
 
 - **Fixed destinations.** Calendar and Contacts use their iCloud hosts and
   validated shards on port 443. Mail uses `imap.mail.me.com:993` and
-  `smtp.mail.me.com:587`, with mandatory STARTTLS for SMTP. TLS 1.2 or later is
+  `smtp.mail.me.com:587` by default, or exactly one operator-configured IMAP
+  and SMTP server per process (`ICLOUD_MCP_IMAP_SERVER`,
+  `ICLOUD_MCP_SMTP_SERVER`), with mandatory STARTTLS for SMTP. TLS 1.2 or later is
   required. DAV ignores proxy environment variables.
 - **Redaction and audit.** The server redacts configured identities, passwords,
   and Basic/SASL forms from errors, results, and logs. Mutation audits contain
@@ -100,7 +102,7 @@ without Calendar, Contacts, or Mail mutation tools.
 ## MCP tools
 
 The server registers **7 tools with the default read-only profile**, including
-the global capability tool, and **24 when explicit permissions and domain gates enable every capability**.
+the global capability tool, and **26 when explicit permissions and domain gates enable every capability**.
 Disabled tools are absent from discovery. The MCP interface provides tools over
 **stdio**.
 
@@ -164,23 +166,23 @@ exists, this page does not claim that an MCPB host install was performed.
 ### Path A: MCPB bundle (host installation unverified)
 
 1. Download the bundle for your platform from the
-   [`v1.1.0` release](https://github.com/ThomasCrouzet/icloud-mcp/releases/tag/v1.1.0):
-   [`linux-amd64`](https://github.com/ThomasCrouzet/icloud-mcp/releases/download/v1.1.0/icloud-mcp-v1.1.0-linux-amd64.mcpb),
-   [`linux-arm64`](https://github.com/ThomasCrouzet/icloud-mcp/releases/download/v1.1.0/icloud-mcp-v1.1.0-linux-arm64.mcpb),
+   [`v1.1.1` release](https://github.com/ThomasCrouzet/icloud-mcp/releases/tag/v1.1.1):
+   [`linux-amd64`](https://github.com/ThomasCrouzet/icloud-mcp/releases/download/v1.1.1/icloud-mcp-v1.1.1-linux-amd64.mcpb),
+   [`linux-arm64`](https://github.com/ThomasCrouzet/icloud-mcp/releases/download/v1.1.1/icloud-mcp-v1.1.1-linux-arm64.mcpb),
    or
-   [`darwin-arm64`](https://github.com/ThomasCrouzet/icloud-mcp/releases/download/v1.1.0/icloud-mcp-v1.1.0-darwin-arm64.mcpb).
+   [`darwin-arm64`](https://github.com/ThomasCrouzet/icloud-mcp/releases/download/v1.1.1/icloud-mcp-v1.1.1-darwin-arm64.mcpb).
 2. Download
-   [`icloud-mcp-v1.1.0-checksums.txt`](https://github.com/ThomasCrouzet/icloud-mcp/releases/download/v1.1.0/icloud-mcp-v1.1.0-checksums.txt)
+   [`icloud-mcp-v1.1.1-checksums.txt`](https://github.com/ThomasCrouzet/icloud-mcp/releases/download/v1.1.1/icloud-mcp-v1.1.1-checksums.txt)
    and the matching `.sig` and `.pem` files. Verify the bytes:
 
    ```sh
-   shasum -a 256 -c icloud-mcp-v1.1.0-checksums.txt
+   shasum -a 256 -c icloud-mcp-v1.1.1-checksums.txt
    cosign verify-blob \
-     --certificate icloud-mcp-v1.1.0-linux-amd64.mcpb.pem \
-     --signature icloud-mcp-v1.1.0-linux-amd64.mcpb.sig \
-     --certificate-identity "https://github.com/ThomasCrouzet/icloud-mcp/.github/workflows/ci.yml@refs/tags/v1.1.0" \
+     --certificate icloud-mcp-v1.1.1-linux-amd64.mcpb.pem \
+     --signature icloud-mcp-v1.1.1-linux-amd64.mcpb.sig \
+     --certificate-identity "https://github.com/ThomasCrouzet/icloud-mcp/.github/workflows/ci.yml@refs/tags/v1.1.1" \
      --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-     icloud-mcp-v1.1.0-linux-amd64.mcpb
+     icloud-mcp-v1.1.1-linux-amd64.mcpb
    ```
 
 3. Open the `.mcpb` file in your MCPB-capable host, or use that host's install
@@ -212,7 +214,7 @@ Download the archive for Linux amd64/arm64 or macOS arm64 from the
 checksum and signature, then extract it:
 
 ```sh
-tar -xzf icloud-mcp-v1.1.0-linux-amd64.tar.gz
+tar -xzf icloud-mcp-v1.1.1-linux-amd64.tar.gz
 ./icloud-mcp -version
 ```
 
@@ -342,7 +344,7 @@ environment; its configuration format can differ. See
 <!-- readme:section configuration -->
 ## Configuration
 
-The binary reads exactly **14 product environment variables** from its process
+The binary reads exactly **16 product environment variables** from its process
 environment. It does not load `.env` files or host configuration files.
 [`.env.example`](.env.example) lists the supported keys. The host or launching
 shell must supply them; restart the process after a change.
@@ -363,6 +365,8 @@ shell must supply them; restart the process after a change.
 | `ICLOUD_MCP_ENABLE_MAIL_WRITE` | No | `false` | Compatibility gate only; Mail mutation requires `mail.mutate` or `mail.trash` |
 | `ICLOUD_MCP_ENABLE_MAIL_SEND` | No | `false` | Compatibility gate only; send requires `mail.send` and a recipient policy |
 | `ICLOUD_MCP_SMTP_ALLOWED_RECIPIENTS` | When send is requested | None | Comma-separated exact addresses, or literal `*` |
+| `ICLOUD_MCP_IMAP_SERVER` | No | `imap.mail.me.com:993` | Non-iCloud IMAP server (`host` or `host:port`, implicit TLS); the only permitted IMAP destination |
+| `ICLOUD_MCP_SMTP_SERVER` | No | `smtp.mail.me.com:587` | Non-iCloud SMTP submission server (`host` or `host:port`, STARTTLS, not 465); the only permitted SMTP destination |
 
 Boolean values accept unset, `0`, `false`, `1`, and `true`; the parser trims
 whitespace and ignores case. Invalid values fail before network access. Pass
@@ -434,7 +438,7 @@ for search, parser, recurrence, and concurrency bounds.
 ### Build and test
 
 From the repository root, use Go 1.26.0 or newer and Make. Build and test need
-no iCloud account or running service. CI and release builds pin Go 1.26.10.
+no iCloud account or running service. CI and release builds pin Go 1.26.11.
 
 ```sh
 make build        # bin/icloud-mcp, host Go; version defaults to dev
@@ -489,7 +493,12 @@ Current limits to account for:
 - **Mail.** Message identity is `(mailbox, UIDVALIDITY, UID)`. Reads return
   plain text and attachment metadata, without HTML or attachment bodies.
   `move_message` rejects SPECIAL-USE Trash and Junk destinations; use
-  `trash_message` for intentional deletion. When CONDSTORE is advertised,
+  `trash_message` for intentional deletion. `create_mailbox` creates one
+  mailbox with an exact name, returns `created=false` when it already exists,
+  and requires an existing parent for nested names. `move_messages` moves up to 50
+  UIDs from one mailbox with the same rules, returns the new destination UIDs
+  in request order, and stops at the first failure with `complete=false`.
+  When CONDSTORE is advertised,
   `set_message_flags` requires `expected_modseq`. The adapter validates one UID
   STORE from the returned FETCH metadata, reports `concurrent_modification` for
   a stale MODSEQ, and never retries the write.

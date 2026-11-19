@@ -29,6 +29,8 @@ func clearEnv(t *testing.T) {
 		"ICLOUD_MCP_ENABLE_MAIL_WRITE",
 		"ICLOUD_MCP_ENABLE_MAIL_SEND",
 		"ICLOUD_MCP_SMTP_ALLOWED_RECIPIENTS",
+		"ICLOUD_MCP_IMAP_SERVER",
+		"ICLOUD_MCP_SMTP_SERVER",
 	} {
 		t.Setenv(k, "")
 		_ = os.Unsetenv(k)

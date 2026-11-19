@@ -5,7 +5,7 @@
 `make lint` uses golangci-lint v2.15.0 and supports Go 1.27.3.
 The linter requires Go 1.26 or newer to build. With an older host toolchain,
 Go can download a compatible version when automatic toolchain selection is enabled.
-The CI lint step uses Go 1.27.3. Other CI checks and release builds use Go 1.26.10.
+The CI lint step uses Go 1.27.3. Other CI checks and release builds use Go 1.26.11.
 
 Run the complete local gates:
 
@@ -13,7 +13,7 @@ Run the complete local gates:
 GOMAXPROCS=2 GOFLAGS=-p=1 make test # go test ./... -race -cover
 GOMAXPROCS=2 GOFLAGS=-p=1 make lint # go vet plus pinned golangci-lint
 GOMAXPROCS=2 GOFLAGS=-p=1 make build # host-toolchain development binary
-make release VERSION=v1.2.3 # packaged linux/arm64 in pinned Go 1.26.10 container
+make release VERSION=v1.2.3 # packaged linux/arm64 in pinned Go 1.26.11 container
 ```
 
 Useful focused commands for the unified domains:
@@ -499,7 +499,7 @@ Package coverage floors are:
 | `cmd/icloud-mcp` | 55% |
 
 Tag releases build the candidate bytes exactly once, in `release-candidates`.
-That job runs `make release-all` with Go 1.26.10 pinned (`check-latest: false`),
+That job runs `make release-all` with Go 1.26.11 pinned (`check-latest: false`),
 builds one MCPB bundle per target, appends the bundle hashes to the checksums
 file, validates `server.json` package hashes, and writes
 `candidate-digests.txt`. It uploads the directory as one immutable artifact.
@@ -641,22 +641,23 @@ Keep private values and raw transcripts outside the repository.
 
 ### Calendar integration command
 
-Use a dedicated account or disposable Calendar where possible:
+Use a dedicated account or disposable Calendar where possible. Set `ICLOUD_PASSWORD`
+to a dedicated test password that you supply. Do not commit it:
 
 ```bash
 export ICLOUD_EMAIL='you@icloud.com'
-export ICLOUD_PASSWORD='xxxx-xxxx-xxxx-xxxx'
+export ICLOUD_PASSWORD='<ICLOUD_PASSWORD>'
 export ICLOUD_MCP_READ_ONLY='true'
 export ICLOUD_MCP_DEFAULT_TZ='Europe/Paris'
 go test -tags=integration -count=1 -v -timeout=120s .
 ```
 
 You can also use `file://` values. Use a regular file of 4 KiB or less, with mode
-0600 or stricter:
+0600 or stricter. `ICLOUD_PASSWORD` holds the `file://` URL, not the password.
 
 ```bash
 export ICLOUD_EMAIL='file:///run/secrets/icloud-email'
-export ICLOUD_PASSWORD='file:///run/secrets/icloud-password'
+export ICLOUD_PASSWORD='<ICLOUD_PASSWORD_FILE_URL>'
 # chmod 600 the secret files before boot
 go test -tags=integration -count=1 -v -timeout=120s .
 ```
@@ -675,7 +676,7 @@ and verifies absence. It skips without all gates.
 
 ```bash
 export ICLOUD_EMAIL='file:///run/secrets/icloud-email'
-export ICLOUD_PASSWORD='file:///run/secrets/icloud-password'
+export ICLOUD_PASSWORD='<ICLOUD_PASSWORD_FILE_URL>'
 export ICLOUD_MCP_READ_ONLY='false'
 export ICLOUD_MCP_INTEGRATION_WRITES='true'
 export ICLOUD_MCP_INTEGRATION_CALENDAR='/123456789/calendars/disposable/'
@@ -700,12 +701,14 @@ go test -tags=integration -count=1 -v -timeout=120s .
 ```
 
 Mail read:
+Set `ICLOUD_MAIL_PASSWORD` to a dedicated app password for that mailbox.
+Do not commit it.
 
 ```bash
 export ICLOUD_MCP_READ_ONLY='true'
 export ICLOUD_MCP_ENABLE_MAIL='true'
 export ICLOUD_MAIL_ADDRESS='mailbox@icloud.com'
-export ICLOUD_MAIL_PASSWORD='dedicated-mail-app-password'
+export ICLOUD_MAIL_PASSWORD='<ICLOUD_MAIL_PASSWORD>'
 go test -tags=integration -count=1 -v -timeout=120s .
 ```
 
@@ -754,7 +757,7 @@ export ICLOUD_MCP_ENABLE_MAIL_WRITE='true'
 export ICLOUD_MCP_ENABLE_MAIL_SEND='true'
 export ICLOUD_MCP_READ_ONLY='false'
 export ICLOUD_MAIL_ADDRESS='mailbox@icloud.com'
-export ICLOUD_MAIL_PASSWORD='dedicated-mail-app-password'
+export ICLOUD_MAIL_PASSWORD='<ICLOUD_MAIL_PASSWORD>'
 export ICLOUD_MCP_SMTP_ALLOWED_RECIPIENTS='mailbox@icloud.com'
 export ICLOUD_MCP_INTEGRATION_WRITES='true'
 export ICLOUD_MCP_INTEGRATION_SELF_RECIPIENT='mailbox@icloud.com'
@@ -765,6 +768,8 @@ go test -tags=integration -run=TestIntegration_MailMutationAndSend \
 Set all five Boolean values above explicitly to the shown values. The
 self-recipient must equal the normalized configured Mail address. An exact
 product SMTP policy must permit this address. The test rejects the literal `*`.
+The address and password must be the dedicated test mailbox from the Mail read
+section.
 
 Before SMTP, the test also requires a complete mailbox list. It requires exactly
 one selectable SPECIAL-USE Trash mailbox. This mailbox gives cleanup a safe

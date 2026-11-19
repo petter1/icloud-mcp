@@ -9,6 +9,7 @@ import (
 const (
 	MaxMailboxes       = 200
 	MaxSearchResults   = 50
+	MaxMoveBatch       = 50
 	MaxSearchValue     = 512
 	MaxUIDsScanned     = 50_000
 	DefaultBodyBytes   = 100 * 1024
@@ -35,6 +36,12 @@ type Config struct {
 	RecipientPolicy RecipientPolicy `json:"-"`
 	EnableSentCopy  bool            `json:"-"`
 	ArchiveScope    []string        `json:"-"`
+	// SMTPServerName is the TLS name verified after STARTTLS. Empty means the
+	// iCloud submission server.
+	SMTPServerName string `json:"-"`
+	// IMAPFullAddressLogin logs in with the full address only (non-iCloud
+	// servers). False keeps the iCloud local-part-first behavior.
+	IMAPFullAddressLogin bool `json:"-"`
 }
 
 // Mailbox is one bounded LIST response item. Delimiter is empty when the
@@ -188,6 +195,63 @@ type MoveResult struct {
 	Method                 string `json:"method"`
 }
 
+type CreateMailboxInput struct {
+	Name string `json:"name"`
+}
+
+// CreateMailboxResult reports the mailbox after CREATE. Created is false when
+// a selectable mailbox with the exact name already existed and nothing was
+// sent to the server.
+type CreateMailboxResult struct {
+	Name       string   `json:"name"`
+	Delimiter  string   `json:"delimiter,omitempty"`
+	Attributes []string `json:"attributes,omitempty"`
+	Created    bool     `json:"created"`
+	// ResultIncomplete is true when CREATE succeeded but the follow-up LIST
+	// did not return the new mailbox.
+	ResultIncomplete bool `json:"resultIncomplete,omitempty"`
+}
+
+// MoveBatchInput moves up to MaxMoveBatch UIDs from one source mailbox to one
+// destination.
+type MoveBatchInput struct {
+	Mailbox     string   `json:"mailbox"`
+	UIDValidity uint32   `json:"uid_validity"`
+	UIDs        []uint32 `json:"uids"`
+	Destination string   `json:"destination"`
+}
+
+// MovedMessage maps one source UID to its new identity in the destination.
+// The destination fields are empty when the server returned no COPYUID data.
+type MovedMessage struct {
+	UID                    uint32 `json:"uid"`
+	DestinationUIDValidity uint32 `json:"destinationUidValidity,omitempty"`
+	DestinationUID         uint32 `json:"destinationUid,omitempty"`
+	Method                 string `json:"method"`
+}
+
+// MoveBatchFailure describes the UID that stopped a batch after earlier UIDs
+// were already moved.
+type MoveBatchFailure struct {
+	UID            uint32 `json:"uid"`
+	Code           Code   `json:"code"`
+	Message        string `json:"message"`
+	Reconciliation string `json:"reconciliation,omitempty"`
+}
+
+// MoveBatchResult reports a batch move in request order. Complete is false
+// when a UID failed after at least one earlier UID moved; Failed names that
+// UID and NotAttempted lists the UIDs that were not sent.
+type MoveBatchResult struct {
+	Mailbox      string            `json:"mailbox"`
+	UIDValidity  uint32            `json:"uidValidity"`
+	Destination  string            `json:"destination"`
+	Moved        []MovedMessage    `json:"moved"`
+	Failed       *MoveBatchFailure `json:"failed,omitempty"`
+	NotAttempted []uint32          `json:"notAttempted,omitempty"`
+	Complete     bool              `json:"complete"`
+}
+
 type SendInput struct {
 	To             []string `json:"to"`
 	Cc             []string `json:"cc,omitempty"`
@@ -237,6 +301,8 @@ type Service interface {
 	SetMessageFlags(ctx context.Context, input SetFlagsInput) (SetFlagsResult, error)
 	MoveMessage(ctx context.Context, input MoveInput) (MoveResult, error)
 	TrashMessage(ctx context.Context, input TrashInput) (MoveResult, error)
+	CreateMailbox(ctx context.Context, input CreateMailboxInput) (CreateMailboxResult, error)
+	MoveMessages(ctx context.Context, input MoveBatchInput) (MoveBatchResult, error)
 	SendMessage(ctx context.Context, input SendInput) (SendResult, error)
 	ReplyMessage(ctx context.Context, input ReplyInput) (SendResult, error)
 }

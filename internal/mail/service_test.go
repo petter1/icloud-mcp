@@ -175,6 +175,16 @@ func (f *fakeIMAP) UIDExpunge(_ uint32) error {
 	f.record("uid-expunge")
 	return f.operationError("uidexpunge")
 }
+func (f *fakeIMAP) CreateMailbox(name string) error {
+	f.record("create")
+	if err := f.operationError("create"); err != nil {
+		return err
+	}
+	f.mu.Lock()
+	f.mailboxes = append(f.mailboxes, imapadapter.Mailbox{Name: name, Delimiter: '/'})
+	f.mu.Unlock()
+	return nil
+}
 func (f *fakeIMAP) Close() error {
 	f.record("close")
 	if f.closeFn != nil {
@@ -1129,9 +1139,10 @@ func (b *blockingIMAP) AppendSent(string, []byte) (imapadapter.AppendData, error
 func (b *blockingIMAP) Copy(uint32, string) (imapadapter.CopyData, error) {
 	return imapadapter.CopyData{}, nil
 }
-func (b *blockingIMAP) AddDeleted(uint32) error { return nil }
-func (b *blockingIMAP) UIDExpunge(uint32) error { return nil }
-func (b *blockingIMAP) Close() error            { b.closeFn(); return nil }
+func (b *blockingIMAP) AddDeleted(uint32) error    { return nil }
+func (b *blockingIMAP) UIDExpunge(uint32) error    { return nil }
+func (b *blockingIMAP) CreateMailbox(string) error { return nil }
+func (b *blockingIMAP) Close() error               { b.closeFn(); return nil }
 
 func TestSMTPOrderMIMEAndAllRecipientPolicy(t *testing.T) {
 	t.Parallel()

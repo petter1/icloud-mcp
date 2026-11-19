@@ -23,13 +23,13 @@ func TestDocumentedToolManifest(t *testing.T) {
 	if got := readOnly.ToolCount(); got != 7 {
 		t.Fatalf("read-only tool count = %d, want 7", got)
 	}
-	if got := all.ToolCount(); got != 24 {
-		t.Fatalf("all-on tool count = %d, want 24", got)
+	if got := all.ToolCount(); got != 26 {
+		t.Fatalf("all-on tool count = %d, want 26", got)
 	}
 
 	readmeCounts := []string{
 		"**7 tools with the default read-only profile**",
-		"**24 when explicit permissions and domain gates enable every capability**",
+		"**26 when explicit permissions and domain gates enable every capability**",
 	}
 	for _, claim := range readmeCounts {
 		if !strings.Contains(readme, claim) {
@@ -38,8 +38,8 @@ func TestDocumentedToolManifest(t *testing.T) {
 	}
 	architectureCounts := []string{
 		"Default registration has seven tools",
-		"enables all 24 tools",
-		"at most **24** tools",
+		"enables all 26 tools",
+		"at most **26** tools",
 		"The default surface has seven read-only tools",
 		"complete surface has exactly",
 	}

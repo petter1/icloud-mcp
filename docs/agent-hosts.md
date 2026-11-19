@@ -24,7 +24,7 @@ against that host or model. Review those policies before any account read.
 
 ## Configuration reference
 
-Exactly **14** product environment variables:
+Exactly **16** product environment variables:
 
 | Variable | Default | Contract |
 |----------|---------|----------|
@@ -42,6 +42,8 @@ Exactly **14** product environment variables:
 | `ICLOUD_MCP_ENABLE_MAIL_WRITE` | `false` | Compatibility gate. Mutation tools require `mail.mutate` or `mail.trash`. |
 | `ICLOUD_MCP_ENABLE_MAIL_SEND` | `false` | Compatibility gate. Send tools require `mail.send`. |
 | `ICLOUD_MCP_SMTP_ALLOWED_RECIPIENTS` | none | Required if send is on. Use exact addresses or literal `*`. Literal `*` causes a boot warning. Use exact addresses when possible. |
+| `ICLOUD_MCP_IMAP_SERVER` | `imap.mail.me.com:993` | Optional non-iCloud IMAP server, `host` or `host:port`. DNS name only, implicit TLS. The only permitted IMAP destination. Requires Mail. |
+| `ICLOUD_MCP_SMTP_SERVER` | `smtp.mail.me.com:587` | Optional non-iCloud SMTP submission server, `host` or `host:port`. DNS name only, STARTTLS, port 465 rejected. Required with `mail.send` when the IMAP server is custom. |
 
 Booleans accept only unset, `0`, `false`, `1`, or `true`. Invalid values cause a
 boot failure. The server validates the configuration **before** network access.
@@ -300,7 +302,7 @@ ICLOUD_MCP_ENABLE_CONTACTS: "false"
 
 An unquoted YAML boolean becomes a host-side boolean. Some hosts reject it
 before the server starts. See the [configuration reference](#configuration-reference)
-for all 14 product variables.
+for all 16 product variables.
 
 ## Logs and health
 

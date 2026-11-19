@@ -24,7 +24,7 @@ protocol executable, plugin, or runtime-downloaded code.
 
 ## Boot and lifecycle
 
-1. `config.Load` reads and validates the 14 environment variables. It resolves
+1. `config.Load` reads and validates the 16 environment variables. It resolves
    boot-only `file://` identity and password values.
 2. Each secret file must be a regular file of 4 KiB or less. Its mode must be
    0600 or stricter.
@@ -92,11 +92,11 @@ The following table groups the complete surface:
 | Calendar | `list_calendars`, `search_events`, `get_event`, `find_free_slots`, `validate_event`, `calendar_capabilities` | `create_event`, `update_event`, `delete_event` |
 | Contacts | `list_address_books`, `search_contacts`, `get_contact` | `create_contact`, `update_contact`, `delete_contact` |
 | Mail read | `list_mailboxes`, `search_messages`, `get_message` | none |
-| Mail mutation | none | `set_message_flags`, `move_message`, `trash_message` |
+| Mail mutation | none | `set_message_flags`, `move_message`, `move_messages`, `create_mailbox`, `trash_message` |
 | Mail send | none | `send_message`, `reply_message` |
 
 Default registration has seven tools: six Calendar read tools and the global
-capability tool. An explicit operator profile enables all 24 tools. Disabled
+capability tool. An explicit operator profile enables all 26 tools. Disabled
 tools have no handler. Disabled optional domains have no client.
 
 The same immutable registration plan generates the local
@@ -109,7 +109,7 @@ or runtime error. `calendar_capabilities` contains only Calendar data.
 
 ## Tool inventory
 
-The server exposes at most **24** tools. Disabled tools are absent from
+The server exposes at most **26** tools. Disabled tools are absent from
 `tools/list`. A disabled optional domain has no client.
 
 | Group | Tools |
@@ -120,11 +120,11 @@ The server exposes at most **24** tools. Disabled tools are absent from
 | Contacts read | `list_address_books`, `search_contacts`, `get_contact` |
 | Contacts write | `create_contact`, `update_contact`, `delete_contact` |
 | Mail read | `list_mailboxes`, `search_messages`, `get_message` |
-| Mail mutation | `set_message_flags`, `move_message`, `trash_message` |
+| Mail mutation | `set_message_flags`, `move_message`, `move_messages`, `create_mailbox`, `trash_message` |
 | Mail send | `send_message`, `reply_message` |
 
 The default surface has seven read-only tools. The complete surface has exactly
-24 tools with explicit permissions and domain gates.
+26 tools with explicit permissions and domain gates.
 
 ## Domain request paths
 

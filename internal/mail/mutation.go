@@ -213,53 +213,67 @@ func isSelectable(mailbox imapadapter.Mailbox) bool {
 }
 
 func moveWithSession(ctx context.Context, session imapSession, phase *imapMutationPhase, source string, uidValidity, uid uint32, destination string) (MoveResult, error) {
-	selected, err := session.Select(source, false)
-	if err != nil {
+	if err := selectMoveSource(session, source, uidValidity); err != nil {
 		return MoveResult{}, err
-	}
-	if selected.UIDValidity != uidValidity {
-		return MoveResult{}, newError(CodeConcurrentModification, "mailbox UIDVALIDITY changed; re-read before moving")
 	}
 	if _, err := session.FetchFlags(uid); err != nil {
 		return MoveResult{}, err
 	}
-	caps := session.Capabilities()
 	result := MoveResult{Mailbox: source, UIDValidity: uidValidity, UID: uid, Destination: destination}
+	moved, err := moveSelectedUID(ctx, session, phase, uid, destination)
+	if err != nil {
+		return MoveResult{}, err
+	}
+	result.Method = moved.Method
+	result.DestinationUIDValidity = moved.DestinationUIDValidity
+	result.DestinationUID = moved.DestinationUID
+	return result, nil
+}
+
+// selectMoveSource selects the source read-write and checks UIDVALIDITY.
+func selectMoveSource(session imapSession, source string, uidValidity uint32) error {
+	selected, err := session.Select(source, false)
+	if err != nil {
+		return err
+	}
+	if selected.UIDValidity != uidValidity {
+		return newError(CodeConcurrentModification, "mailbox UIDVALIDITY changed; re-read before moving")
+	}
+	return nil
+}
+
+// moveSelectedUID moves one UID out of the already selected source mailbox.
+func moveSelectedUID(ctx context.Context, session imapSession, phase *imapMutationPhase, uid uint32, destination string) (MovedMessage, error) {
+	caps := session.Capabilities()
 	if caps.Move {
 		phase.dispatched = true
 		data, err := session.NativeMove(uid, destination)
 		if err != nil {
-			return MoveResult{}, mapIMAPError(err, ctx, true, "Check both source and destination before deciding whether to move again.")
+			return MovedMessage{}, mapIMAPError(err, ctx, true, "Check both source and destination before deciding whether to move again.")
 		}
-		result.Method = "move"
 		if (data.UIDValidity == 0) != (data.DestinationUID == 0) {
-			return MoveResult{}, &Error{Code: CodeOutcomeUnknown, Message: "mail move succeeded with unusable COPYUID metadata", Reconciliation: "Check both source and destination before deciding whether to move again."}
+			return MovedMessage{}, &Error{Code: CodeOutcomeUnknown, Message: "mail move succeeded with unusable COPYUID metadata", Reconciliation: "Check both source and destination before deciding whether to move again."}
 		}
-		result.DestinationUIDValidity = data.UIDValidity
-		result.DestinationUID = data.DestinationUID
-		return result, nil
+		return MovedMessage{UID: uid, DestinationUIDValidity: data.UIDValidity, DestinationUID: data.DestinationUID, Method: "move"}, nil
 	}
 	if !caps.UIDPlus {
-		return MoveResult{}, newError(CodeProtocolError, "server supports neither native MOVE nor the safe UIDPLUS fallback")
+		return MovedMessage{}, newError(CodeProtocolError, "server supports neither native MOVE nor the safe UIDPLUS fallback")
 	}
 	phase.dispatched = true
 	data, err := session.Copy(uid, destination)
 	if err != nil {
-		return MoveResult{}, mapIMAPError(err, ctx, true, "Check the destination before deciding whether to move again.")
+		return MovedMessage{}, mapIMAPError(err, ctx, true, "Check the destination before deciding whether to move again.")
 	}
 	if data.UIDValidity == 0 || data.DestinationUID == 0 {
-		return MoveResult{}, &Error{Code: CodeOutcomeUnknown, Message: "mail copy succeeded with unusable COPYUID metadata", Reconciliation: "A destination copy may exist. Check the destination before deciding whether to move again."}
+		return MovedMessage{}, &Error{Code: CodeOutcomeUnknown, Message: "mail copy succeeded with unusable COPYUID metadata", Reconciliation: "A destination copy may exist. Check the destination before deciding whether to move again."}
 	}
 	if err := session.AddDeleted(uid); err != nil {
-		return MoveResult{}, moveStepError(err, "copied_not_marked_deleted", "A destination copy may exist while the source remains. Check both mailboxes.")
+		return MovedMessage{}, moveStepError(err, "copied_not_marked_deleted", "A destination copy may exist while the source remains. Check both mailboxes.")
 	}
 	if err := session.UIDExpunge(uid); err != nil {
-		return MoveResult{}, moveStepError(err, "copied_marked_deleted_not_expunged", "A destination copy exists and the source may remain marked Deleted. Check both mailboxes.")
+		return MovedMessage{}, moveStepError(err, "copied_marked_deleted_not_expunged", "A destination copy exists and the source may remain marked Deleted. Check both mailboxes.")
 	}
-	result.Method = "uidplus_fallback"
-	result.DestinationUIDValidity = data.UIDValidity
-	result.DestinationUID = data.DestinationUID
-	return result, nil
+	return MovedMessage{UID: uid, DestinationUIDValidity: data.UIDValidity, DestinationUID: data.DestinationUID, Method: "uidplus_fallback"}, nil
 }
 
 func moveStepError(err error, category, reconciliation string) error {

@@ -31,6 +31,7 @@ type imapSession interface {
 	Copy(uid uint32, destination string) (imapadapter.CopyData, error)
 	AddDeleted(uid uint32) error
 	UIDExpunge(uid uint32) error
+	CreateMailbox(name string) error
 	Close() error
 }
 
