@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>icloud-mcp Mailkonten</title>
+<style>
+  :root { color-scheme: light dark; --bg:#f6f6f4; --card:#fff; --fg:#1d1d1b; --muted:#6b6b66; --line:#dcdcd6; --accent:#2f6fde; --bad:#b3261e; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#161615; --card:#21211f; --fg:#ececea; --muted:#a3a39d; --line:#3a3a37; --accent:#7aa7ff; --bad:#ff8a80; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.45 system-ui, sans-serif; }
+  main { max-width:860px; margin:0 auto; padding:24px 16px 64px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  h2 { font-size:17px; margin:0 0 12px; }
+  .muted { color:var(--muted); font-size:13px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-top:16px; }
+  .row { display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+  label { display:block; font-size:13px; color:var(--muted); margin:10px 0 4px; }
+  input[type=text], input[type=email], input[type=password] { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--fg); font:inherit; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:0 12px; }
+  @media (max-width:600px) { .grid { grid-template-columns:1fr; } }
+  .perms label { display:inline-flex; gap:6px; align-items:center; margin-right:14px; color:var(--fg); font-size:14px; }
+  button { font:inherit; padding:7px 14px; border-radius:6px; border:1px solid var(--line); background:transparent; color:var(--fg); cursor:pointer; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  button.danger { color:var(--bad); }
+  pre { white-space:pre-wrap; word-break:break-all; background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:10px; font-size:12px; margin:8px 0 0; }
+  .error { color:var(--bad); margin-top:10px; min-height:1em; }
+  .tag { font-size:12px; border:1px solid var(--line); border-radius:999px; padding:1px 8px; margin-left:6px; color:var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Mailkonten für icloud-mcp</h1>
+  <p class="muted">Pro Konto läuft ein eigener icloud-mcp-Prozess, der nur mit dem eingetragenen Server sprechen darf. Passwörter werden nur gespeichert (Dateien mit Rechten 600), nie angezeigt. Ablage: <span id="dir"></span></p>
+
+  <div id="list"></div>
+
+  <form class="card" id="form" autocomplete="off">
+    <div class="row"><h2 id="formTitle">Neues Konto</h2><button type="button" id="reset">Leeren</button></div>
+    <div class="grid">
+      <div><label for="id">Kürzel (a-z, 0-9, -) → MCP-Name «mail-…»</label><input type="text" id="id" required maxlength="32" pattern="[a-z0-9][a-z0-9-]*"></div>
+      <div><label for="label">Bezeichnung (optional)</label><input type="text" id="label" maxlength="80"></div>
+      <div><label for="address">Mailadresse (Login)</label><input type="email" id="address" required></div>
+      <div><label for="password">App-Passwort <span id="pwHint" class="muted"></span></label><input type="password" id="password" autocomplete="new-password"></div>
+      <div><label for="imap">IMAP-Server (leer = iCloud), z. B. mail.example.org oder host:993</label><input type="text" id="imap"></div>
+      <div><label for="smtp">SMTP-Server (leer = iCloud), z. B. mail.example.org oder host:587</label><input type="text" id="smtp"></div>
+    </div>
+    <label>Rechte</label>
+    <div class="perms" id="perms"></div>
+    <div class="grid">
+      <div><label for="recipients">Erlaubte Empfänger (nur bei Senden; Adressen mit Komma)</label><input type="text" id="recipients"></div>
+      <div><label for="tz">Zeitzone (optional)</label><input type="text" id="tz" placeholder="Europe/Zurich"></div>
+    </div>
+    <label class="perms"><label><input type="checkbox" id="readonly" checked> Nur lesen erzwingen (überstimmt alle Schreibrechte)</label></label>
+    <div class="row" style="margin-top:14px"><span class="error" id="error"></span><button class="primary" type="submit">Speichern</button></div>
+  </form>
+</main>
+<script>
+const TOKEN = "{{TOKEN}}";
+const PERMS = [
+  ["mail.read", "Lesen"], ["mail.mutate", "Verschieben / Flags / Ordner"],
+  ["mail.trash", "In Papierkorb"], ["mail.send", "Senden"], ["mail.archive", "Kopie in Gesendet"]
+];
+const $ = (id) => document.getElementById(id);
+let editing = null;
+
+for (const [token, text] of PERMS) {
+  const label = document.createElement("label");
+  const box = document.createElement("input");
+  box.type = "checkbox"; box.value = token; box.checked = token === "mail.read";
+  label.append(box, " " + text + " ", Object.assign(document.createElement("span"), {className: "muted", textContent: token}));
+  $("perms").append(label);
+}
+
+async function api(method, path, body) {
+  const res = await fetch(path, {
+    method, credentials: "same-origin",
+    headers: body ? {"Content-Type": "application/json", "X-Setup-Token": TOKEN} : {"X-Setup-Token": TOKEN},
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const data = await res.json().catch(() => ({error: "Unerwartete Antwort"}));
+  if (!res.ok) throw new Error(data.error || res.statusText);
+  return data;
+}
+
+function el(tag, props, ...children) {
+  const node = Object.assign(document.createElement(tag), props || {});
+  node.append(...children);
+  return node;
+}
+
+function render(data) {
+  $("dir").textContent = data.dir;
+  const list = $("list");
+  list.replaceChildren();
+  if (!data.accounts.length) {
+    list.append(el("p", {className: "card muted", textContent: "Noch keine Konten."}));
+    return;
+  }
+  for (const a of data.accounts) {
+    const head = el("div", {className: "row"},
+      el("h2", {}, a.serverName, el("span", {className: "tag", textContent: a.imapServer || "iCloud"}),
+        a.readOnly ? el("span", {className: "tag", textContent: "nur lesen"}) : "",
+        a.hasPassword ? "" : el("span", {className: "tag", textContent: "Passwort fehlt"})),
+      el("div", {},
+        el("button", {type: "button", textContent: "Bearbeiten", onclick: () => edit(a)}), " ",
+        el("button", {type: "button", className: "danger", textContent: "Löschen", onclick: () => remove(a)})));
+    const info = el("p", {className: "muted", textContent: (a.label ? a.label + " · " : "") + a.address + " · " + a.permissions.join(", ")});
+    const cmd = el("pre", {textContent: a.command});
+    const copy = el("button", {type: "button", textContent: "Befehl kopieren", onclick: async () => {
+      try { await navigator.clipboard.writeText(a.command); copy.textContent = "Kopiert"; } catch { copy.textContent = "Bitte manuell kopieren"; }
+    }});
+    list.append(el("section", {className: "card"}, head, info,
+      el("p", {className: "muted", textContent: "In Claude Code eintragen (einmal im Terminal ausführen; überschreibt einen gleichnamigen Server nicht):"}), cmd, copy));
+  }
+}
+
+async function load() {
+  try { render(await api("GET", "/api/accounts")); } catch (e) { $("error").textContent = e.message; }
+}
+
+function resetForm() {
+  editing = null;
+  $("form").reset();
+  $("id").disabled = false;
+  $("formTitle").textContent = "Neues Konto";
+  $("pwHint").textContent = "";
+  for (const box of $("perms").querySelectorAll("input")) box.checked = box.value === "mail.read";
+  $("readonly").checked = true;
+  $("error").textContent = "";
+}
+
+function edit(a) {
+  resetForm();
+  editing = a.id;
+  $("formTitle").textContent = "Konto bearbeiten: " + a.serverName;
+  $("id").value = a.id; $("id").disabled = true;
+  $("label").value = a.label || ""; $("address").value = a.address;
+  $("imap").value = a.imapServer || ""; $("smtp").value = a.smtpServer || "";
+  $("recipients").value = a.allowedRecipients || ""; $("tz").value = a.defaultTZ || "";
+  $("readonly").checked = a.readOnly;
+  $("pwHint").textContent = a.hasPassword ? "(leer lassen = unverändert)" : "";
+  for (const box of $("perms").querySelectorAll("input")) box.checked = a.permissions.includes(box.value);
+  $("form").scrollIntoView({behavior: "smooth"});
+}
+
+async function remove(a) {
+  if (!confirm("Konto " + a.serverName + " samt gespeichertem Passwort löschen? Den Eintrag in Claude Code entfernst du selbst: claude mcp remove " + a.serverName)) return;
+  try { await api("DELETE", "/api/accounts/" + encodeURIComponent(a.id)); resetForm(); load(); }
+  catch (e) { $("error").textContent = e.message; }
+}
+
+$("reset").onclick = resetForm;
+$("form").onsubmit = async (event) => {
+  event.preventDefault();
+  $("error").textContent = "";
+  const body = {
+    id: editing || $("id").value.trim(), label: $("label").value, address: $("address").value,
+    imapServer: $("imap").value, smtpServer: $("smtp").value,
+    permissions: [...$("perms").querySelectorAll("input:checked")].map((b) => b.value),
+    allowedRecipients: $("recipients").value, readOnly: $("readonly").checked,
+    defaultTZ: $("tz").value, password: $("password").value
+  };
+  try { await api("POST", "/api/accounts", body); $("password").value = ""; resetForm(); load(); }
+  catch (e) { $("error").textContent = e.message; }
+};
+load();
+</script>
+</body>
+</html>
