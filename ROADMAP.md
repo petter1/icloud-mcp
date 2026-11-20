@@ -23,7 +23,10 @@ icloud-mcp ist der iCloud-Zugang ohne Mac: Kalender über CalDAV, Kontakte über
 - Integrationstests gegen echtes iCloud brauchen Zugangsdaten. Die gibt es in Cloud-Sessions nicht. Dort nur Unit-Tests.
 - **Zugangsdaten nie ins Repo, in Logs oder in den Chat.** Sie liegen auf dem Rechner in `~/.config/icloud-mcp/` (`email`, `mail_address`, `password`, je `chmod 600`, app-spezifisches Apple-Passwort) und werden vom Besitzer selbst angelegt.
 - **Upstream nicht blind nachziehen.** Upstream mergt Dependabot-Updates automatisch. Vor dem Merge von `upstream/main` die neuen Commits und Abhängigkeiten ansehen.
-- Eine Änderung pro Branch. PRs für upstream auf Englisch und vom aktuellen `upstream/main` abzweigen. Diese `ROADMAP.md` nicht in Upstream-PRs mitnehmen.
+- Eine Änderung pro Branch, abgezweigt vom Fork-`main`, Commits auf Englisch.
+- **Keine Interaktion mit upstream (Entscheid Yanik 18.11.2026):** Claude öffnet keine PRs, Issues oder Kommentare im Upstream-Repo. **Kein aktives Upstreaming (19.11.2026):** Der Fork darf sich frei entwickeln; Upstream-Updates (v. a. Sicherheitsfixes) weiterhin geprüft nachziehen.
+- Roadmap ohne feste Termine, nur Reihenfolge (Entscheid 19.11.2026).
+- **GitHub immer aktuell (Entscheid 20.11.2026):** Jeder fertige Branch und jede Roadmap-Änderung sofort nach `origin` pushen. Vor neuer Arbeit `git fetch origin`, offene Fork-PRs und diese Roadmap auf `main` prüfen. Roadmap-Änderungen auf `main` nachführen, nicht nur im Session-Branch (sonst Doppelarbeit wie 18.–20.11.).
 - Nach jedem erledigten Schritt hier den Status nachführen (✅ + Datum).
 
 ## Stand Nutzung (Linux-Rechner, 13.11.2026)
