@@ -72,7 +72,7 @@ icloud-mcp ist der iCloud-Zugang ohne Mac: Kalender über CalDAV, Kontakte über
 | 2 Mail | #1, #2, #4 | #2, #4 ✅ 20.11. in `main` · #1 wartet auf Review |
 | 3 Abklären | #3 Reminders | noch nicht eingeplant |
 | 4 Abschluss | Tests, README (kein Upstreaming, Entscheid 19.11.) | offen |
-| 5 Anbindung Orchard | Zusammen mit Orchard Phase 5: Orchard startet icloud-mcp als Kindprozess (stdio), Tool-Zuordnung siehe `ROADMAP.md` im Orchard-Fork. Hier höchstens Kleinigkeiten nötig, z. B. stabile, maschinenlesbare Antworten. | nach Orchard Phase 1–4, frühestens 2027 |
+| 5 Anbindung Orchard | Zusammen mit Orchard Phase 5: Orchard startet icloud-mcp als Kindprozess (stdio), Tool-Zuordnung siehe `ROADMAP.md` im Orchard-Fork. Hier höchstens Kleinigkeiten nötig, z. B. stabile, maschinenlesbare Antworten. | Orchard-Seite ✅ 20.11.2026 (Orchard `main`, `src/icloud/`): startet icloud-mcp per `ICLOUD_MCP_BIN`, Smoke-Test gegen dieses Binary lokal ok. Offen: echter Test auf Linux, braucht Phase 1 (Zugangsdaten). |
 
 Phase 1 ist Voraussetzung für Orchard Phase 5.
 
