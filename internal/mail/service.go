@@ -59,6 +59,11 @@ func newService(config Config, imapDial IMAPDialFunc, smtpDial SMTPDialFunc, ena
 		return nil, validationError("mail send requires an SMTP dialer and recipient policy")
 	}
 	config.Address = address
+	if config.From == "" {
+		config.From = address
+	} else if config.From, err = validateAddrSpec(config.From); err != nil || containsNonASCII(config.From) {
+		return nil, validationError("mail sender must be a plain ASCII addr-spec")
+	}
 	config.RecipientPolicy = config.RecipientPolicy.clone()
 	return &Client{
 		config: config, imapDial: imapDial, smtpDial: smtpDial,
@@ -397,7 +402,7 @@ func (s *Client) SearchMessages(ctx context.Context, input SearchInput) (SearchR
 		requested := append([]uint32(nil), found...)
 		result.ScanLimitReached = scanned == MaxUIDsScanned && high > 0
 		if len(found) > 0 {
-			metadata, fetchErr := session.FetchMetadata(found, false)
+			metadata, fetchErr := session.FetchMetadata(found, imapadapter.ProjectionSummary)
 			if fetchErr != nil {
 				return nil, fetchErr
 			}

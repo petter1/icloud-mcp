@@ -95,10 +95,10 @@ parser errors.
 
 ## `file://` operator boundary
 
-`ICLOUD_EMAIL`, `ICLOUD_PASSWORD`, `ICLOUD_MAIL_ADDRESS`, and
-`ICLOUD_MAIL_PASSWORD` support `file://`. The server reads Mail values only when
-Mail is enabled. It accepts only a regular file of 4 KiB or less. The file mode
-must prevent group and world access, which is 0600 or stricter.
+`ICLOUD_EMAIL`, `ICLOUD_PASSWORD`, `ICLOUD_MAIL_ADDRESS`, `ICLOUD_MAIL_FROM`,
+and `ICLOUD_MAIL_PASSWORD` support `file://`. The server reads Mail values
+only when Mail is enabled. It accepts only a regular file of 4 KiB or less.
+The file mode must prevent group and world access, which is 0600 or stricter.
 
 The server reads the file once at boot. It removes surrounding whitespace and
 keeps only the value. It rejects FIFOs, devices, directories, oversized files,
@@ -133,14 +133,23 @@ Global read-only removes every granted write and send tool. An unset
 `ICLOUD_MCP_PERMISSIONS` grants reads only.
 Requested Mail send still requires a recipient allowlist at boot.
 
-`list_mailboxes` returns a mailbox only when at least one effective Mail
-capability reaches it. Each entry carries `accessModes` with the applicable
-subset of `read`, `mutate`, and `archive`. Scope inheritance means a mailbox
-allowed by `mail.read` is also mutable and archivable unless a narrower
-`mail.mutate` or `mail.archive` scope is set. A mailbox that is only a mutation
-or archive target is listed with those modes and never advertised as readable.
-`search_messages`, `get_message`, and `reply_message` still enforce
-`mail.read` independently.
+`list_mailboxes` returns a mailbox only when at least one granted and enabled
+Mail capability reaches it. Each entry carries `accessModes` with the applicable
+subset of `read`, `mutate`, and `archive`. The listing intersects two inputs: the
+effective capability plan, which decides whether an action is granted at all,
+and the per-destination resource scope for that action. A scope entry for an
+action that the plan does not grant can therefore never disclose a mailbox or
+advertise a right. This covers `ICLOUD_MCP_READ_ONLY=true`, an explicit
+`ICLOUD_MCP_PERMISSIONS` subset, and a Mail-send profile without
+`mail.archive`: `archive` is reported only when the Sent-copy capability is
+really enabled.
+
+Scope inheritance means a mailbox allowed by `mail.read` is also mutable and
+archivable unless a narrower `mail.mutate` or `mail.archive` scope is set. A
+mailbox that is only a mutation or archive target is listed with those modes and
+never advertised as readable. `search_messages`, `get_message`, and
+`reply_message` still enforce `mail.read` independently, so a listed destination
+is never a read grant.
 
 ### Calendar read resource scopes
 
@@ -290,15 +299,23 @@ A Mail message uses the identity `(mailbox, UIDVALIDITY, UID)`. Search cursors
 must pair `before_uid` with UIDVALIDITY. Get and each mutation select the named
 mailbox. They reject a UIDVALIDITY mismatch before an action.
 
-Reads request MODSEQ when the IMAP server advertises CONDSTORE. Safe conditional
-STORE requires detection of the tagged MODIFIED response. The current go-imap
-beta.8 adapter cannot give this guarantee. Thus, `set_message_flags` rejects the
-request before STORE with `protocol_error`.
+Reads request MODSEQ when the IMAP server advertises CONDSTORE. A safe
+conditional STORE needs the tagged `MODIFIED` response. `go-imap` v2 discards
+that response code, so the adapter observes the tagged status line of the
+guarded STORE it sent through its inbound protocol guard. The observer binds
+the tag of that command line, so no other command response is evidence. It
+reads no MIME data and changes no wire guard.
 
-This unavailable path does not report `concurrent_modification`. Without
-CONDSTORE, the adapter uses only delta `+FLAGS.SILENT` or `-FLAGS.SILENT`. These
-commands apply to Seen, Flagged, and Answered. The result contains
-`conditionalUpdate: false`.
+`set_message_flags` reports a conditional success only when the tagged status
+carried no `MODIFIED` and the server returned the FETCH of that UID with the
+requested delta. A tagged `MODIFIED` for this UID returns
+`concurrent_modification`. A dispatched STORE whose status or FETCH is not
+verifiable returns `outcome_unknown`. Neither case is retried, and a CONDSTORE
+server never receives an unconditional STORE.
+
+Without CONDSTORE, the adapter uses only delta `+FLAGS.SILENT` or
+`-FLAGS.SILENT`. These commands apply to Seen, Flagged, and Answered. The
+result contains `conditionalUpdate: false`.
 
 Move uses native UID MOVE when available. Otherwise, it requires UIDPLUS. It
 sends UID COPY, adds Deleted, and sends UID EXPUNGE for the one UID. The server

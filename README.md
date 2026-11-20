@@ -60,7 +60,7 @@ See the [threat model and reporting policy](SECURITY.md) and
 
 | Capability | Operations | Enablement |
 |---|---|---|
-| Calendar | List calendars; search, get, and validate events; find free slots; create, update, and delete events | Reads always on; `calendar.write` and `calendar.delete` in `ICLOUD_MCP_PERMISSIONS` are required for effects; group-scheduled mutations also need `calendar.schedule` and `acknowledge_scheduling` |
+| Calendar | List calendars; search, get, and validate events; find free slots; create, update, and delete events | `calendar.read` in `ICLOUD_MCP_PERMISSIONS` registers the read tools; a profile without it receives no Calendar tool; `calendar.write` and `calendar.delete` are required for effects; group-scheduled mutations also need `calendar.schedule` and `acknowledge_scheduling` |
 | Contacts | List books; search and get contacts; create, update, and delete vCard 3.0 contacts | Reads require `ICLOUD_MCP_ENABLE_CONTACTS=true`; writes require `contacts.write` or `contacts.delete` |
 | Mail read | List mailboxes; search messages; get plain text and attachment metadata | `ICLOUD_MCP_ENABLE_MAIL=true` |
 | Mail mutation | Change flags; move or trash a message | Mail plus `mail.mutate` or `mail.trash` |
@@ -164,23 +164,23 @@ exists, this page does not claim that an MCPB host install was performed.
 ### Path A: MCPB bundle (host installation unverified)
 
 1. Download the bundle for your platform from the
-   [`v1.1.0` release](https://github.com/ThomasCrouzet/icloud-mcp/releases/tag/v1.1.0):
-   [`linux-amd64`](https://github.com/ThomasCrouzet/icloud-mcp/releases/download/v1.1.0/icloud-mcp-v1.1.0-linux-amd64.mcpb),
-   [`linux-arm64`](https://github.com/ThomasCrouzet/icloud-mcp/releases/download/v1.1.0/icloud-mcp-v1.1.0-linux-arm64.mcpb),
+   [`v1.2.0` release](https://github.com/ThomasCrouzet/icloud-mcp/releases/tag/v1.2.0):
+   [`linux-amd64`](https://github.com/ThomasCrouzet/icloud-mcp/releases/download/v1.2.0/icloud-mcp-v1.2.0-linux-amd64.mcpb),
+   [`linux-arm64`](https://github.com/ThomasCrouzet/icloud-mcp/releases/download/v1.2.0/icloud-mcp-v1.2.0-linux-arm64.mcpb),
    or
-   [`darwin-arm64`](https://github.com/ThomasCrouzet/icloud-mcp/releases/download/v1.1.0/icloud-mcp-v1.1.0-darwin-arm64.mcpb).
+   [`darwin-arm64`](https://github.com/ThomasCrouzet/icloud-mcp/releases/download/v1.2.0/icloud-mcp-v1.2.0-darwin-arm64.mcpb).
 2. Download
-   [`icloud-mcp-v1.1.0-checksums.txt`](https://github.com/ThomasCrouzet/icloud-mcp/releases/download/v1.1.0/icloud-mcp-v1.1.0-checksums.txt)
+   [`icloud-mcp-v1.2.0-checksums.txt`](https://github.com/ThomasCrouzet/icloud-mcp/releases/download/v1.2.0/icloud-mcp-v1.2.0-checksums.txt)
    and the matching `.sig` and `.pem` files. Verify the bytes:
 
    ```sh
-   shasum -a 256 -c icloud-mcp-v1.1.0-checksums.txt
+   shasum -a 256 -c icloud-mcp-v1.2.0-checksums.txt
    cosign verify-blob \
-     --certificate icloud-mcp-v1.1.0-linux-amd64.mcpb.pem \
-     --signature icloud-mcp-v1.1.0-linux-amd64.mcpb.sig \
-     --certificate-identity "https://github.com/ThomasCrouzet/icloud-mcp/.github/workflows/ci.yml@refs/tags/v1.1.0" \
+     --certificate icloud-mcp-v1.2.0-linux-amd64.mcpb.pem \
+     --signature icloud-mcp-v1.2.0-linux-amd64.mcpb.sig \
+     --certificate-identity "https://github.com/ThomasCrouzet/icloud-mcp/.github/workflows/ci.yml@refs/tags/v1.2.0" \
      --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-     icloud-mcp-v1.1.0-linux-amd64.mcpb
+     icloud-mcp-v1.2.0-linux-amd64.mcpb
    ```
 
 3. Open the `.mcpb` file in your MCPB-capable host, or use that host's install
@@ -212,7 +212,7 @@ Download the archive for Linux amd64/arm64 or macOS arm64 from the
 checksum and signature, then extract it:
 
 ```sh
-tar -xzf icloud-mcp-v1.1.0-linux-amd64.tar.gz
+tar -xzf icloud-mcp-v1.2.0-linux-amd64.tar.gz
 ./icloud-mcp -version
 ```
 
@@ -342,7 +342,7 @@ environment; its configuration format can differ. See
 <!-- readme:section configuration -->
 ## Configuration
 
-The binary reads exactly **14 product environment variables** from its process
+The binary reads exactly **15 product environment variables** from its process
 environment. It does not load `.env` files or host configuration files.
 [`.env.example`](.env.example) lists the supported keys. The host or launching
 shell must supply them; restart the process after a change.
@@ -359,6 +359,7 @@ shell must supply them; restart the process after a change.
 | `ICLOUD_MCP_ENABLE_CONTACTS` | No | `false` | Enable Contacts reads; writes require `contacts.write` or `contacts.delete` |
 | `ICLOUD_MCP_ENABLE_MAIL` | No | `false` | Enable Mail reads |
 | `ICLOUD_MAIL_ADDRESS` | When Mail is on | None | Full iCloud Mail address; supports `file://` |
+| `ICLOUD_MAIL_FROM` | No | `ICLOUD_MAIL_ADDRESS` | Sender address for From and `MAIL FROM`, for example an iCloud+ custom-domain address; login stays on `ICLOUD_MAIL_ADDRESS`; ASCII only; supports `file://` (an empty file is an error) |
 | `ICLOUD_MAIL_PASSWORD` | No | `ICLOUD_PASSWORD` | Separate Mail app-specific password; supports `file://` |
 | `ICLOUD_MCP_ENABLE_MAIL_WRITE` | No | `false` | Compatibility gate only; Mail mutation requires `mail.mutate` or `mail.trash` |
 | `ICLOUD_MCP_ENABLE_MAIL_SEND` | No | `false` | Compatibility gate only; send requires `mail.send` and a recipient policy |
@@ -434,7 +435,7 @@ for search, parser, recurrence, and concurrency bounds.
 ### Build and test
 
 From the repository root, use Go 1.26.0 or newer and Make. Build and test need
-no iCloud account or running service. CI and release builds pin Go 1.26.10.
+no iCloud account or running service. CI and release builds pin Go 1.26.11.
 
 ```sh
 make build        # bin/icloud-mcp, host Go; version defaults to dev
@@ -490,9 +491,11 @@ Current limits to account for:
   plain text and attachment metadata, without HTML or attachment bodies.
   `move_message` rejects SPECIAL-USE Trash and Junk destinations; use
   `trash_message` for intentional deletion. When CONDSTORE is advertised,
-  `set_message_flags` requires `expected_modseq`. The adapter validates one UID
-  STORE from the returned FETCH metadata, reports `concurrent_modification` for
-  a stale MODSEQ, and never retries the write.
+  `set_message_flags` requires `expected_modseq`. The adapter sends one guarded
+  UID STORE and proves the result from its tagged status and the returned
+  FETCH. It reports `concurrent_modification` for a stale MODSEQ and
+  `outcome_unknown` when the result cannot be proved, and never retries the
+  write.
 - **Scope.** Reminders, Notes, Photos, Drive, Find My, Keychain, Messages, and
   Home are outside the supported scope. Modern Reminders are not exposed by
   this CalDAV connector.
