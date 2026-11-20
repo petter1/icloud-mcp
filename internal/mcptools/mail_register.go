@@ -17,6 +17,11 @@ type MailDeps struct {
 	Audit          *security.AuditLogger
 	Redactor       *security.Redactor
 	ResourceScopes config.ResourceScopes
+
+	// Plan is the effective authorization plan for this registration. Tool
+	// registration and the mailbox listing read the same plan, so a listing
+	// never advertises a capability that this process did not register.
+	Plan CapabilityPlan
 }
 
 // RegisterMail registers Mail reads and the independently gated mutation and
@@ -113,7 +118,7 @@ func newGetMessageTool() mcp.Tool {
 
 func newSetMessageFlagsTool() mcp.Tool {
 	return mcp.NewTool("set_message_flags",
-		mcp.WithDescription("Adds or removes only the safe seen, flagged, and answered flags on one message identified by (mailbox, UIDVALIDITY, UID). It never replaces all flags and cannot set Deleted, Recent, or arbitrary keywords. expected_modseq is required when the server advertises CONDSTORE. The adapter sends one UID STORE with UNCHANGEDSINCE and validates the returned FETCH metadata, so a stale MODSEQ returns concurrent_modification without changing flags. Mutations are never automatically retried."),
+		mcp.WithDescription("Adds or removes only the safe seen, flagged, and answered flags on one message identified by (mailbox, UIDVALIDITY, UID). It never replaces all flags and cannot set Deleted, Recent, or arbitrary keywords. expected_modseq is required when the server advertises CONDSTORE. The adapter sends one UID STORE with UNCHANGEDSINCE, observes the tagged status of that command, and requires the returned FETCH metadata, so a stale MODSEQ returns concurrent_modification and an unverifiable return reports outcome_unknown. Mutations are never automatically retried."),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),

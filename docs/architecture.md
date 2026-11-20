@@ -7,9 +7,10 @@ Mail. Any MCP-compatible host can run it as a child process. It uses JSON-RPC on
 stdin and stdout. It reads configuration only from the process environment. The
 build produces one release artifact.
 
-The server does not embed or prefer a model vendor or agent product. Calendar
-is always enabled. Contacts, Mail read, Mail mutation, and Mail send are
-composable capabilities.
+The server does not embed or prefer a model vendor or agent product. Every
+domain capability is composable: Calendar, Contacts, Mail read, Mail mutation,
+and Mail send. A domain is registered only when the effective configuration
+grants at least one of its capabilities.
 
 The protocol boundary is narrow:
 
@@ -24,7 +25,7 @@ protocol executable, plugin, or runtime-downloaded code.
 
 ## Boot and lifecycle
 
-1. `config.Load` reads and validates the 14 environment variables. It resolves
+1. `config.Load` reads and validates the 15 environment variables. It resolves
    boot-only `file://` identity and password values.
 2. Each secret file must be a regular file of 4 KiB or less. Its mode must be
    0600 or stricter.
@@ -35,9 +36,21 @@ protocol executable, plugin, or runtime-downloaded code.
    pairs. The variants include Basic-auth and SASL PLAIN encodings.
 6. `RedactingWriter` receives all stderr and standard library logs.
 7. One immutable `CapabilityPlan` applies global read-only, the optional
-   domain gates, and `ICLOUD_MCP_PERMISSIONS`. It is the source of both tool
-   registration and `icloud_capabilities` output. `ICLOUD_MCP_RESOURCE_SCOPES`
-   is a separate immutable allowlist checked in each domain operation path.
+   domain gates, and `ICLOUD_MCP_PERMISSIONS`. It is the source of tool
+   registration, `icloud_capabilities` output, and the `initialize`
+   instructions. `ICLOUD_MCP_RESOURCE_SCOPES` is a separate immutable allowlist
+   checked in each domain operation path.
+
+   - `ICLOUD_MCP_PERMISSIONS` alone selects the domains. When it is set, only
+     the domains whose tokens appear in it are built and registered. Calendar
+     is not special: a Mail-only or Contacts-only list omits every Calendar
+     tool.
+   - The `initialize` instructions come from the same plan. They name only the
+     domain tool groups that this process registered, route the host to
+     `tools/list` and `icloud_capabilities` for the exact surface, state global
+     read-only when it applies, and keep the untrusted-content rule. They carry
+     no identity, mailbox, recipient, host, or resource path. No domain is
+     described as always available.
 8. The server builds separate Calendar, Contacts, IMAP, and SMTP transports or
    dialers only for enabled capabilities. Calendar and Contacts receive separate
    credential objects and authenticated HTTP clients.
@@ -239,10 +252,17 @@ tool -> 25s context -> Mail limiter/semaphore -> fixed IMAP dial
 ```
 
 Read operations use EXAMINE and PEEK. Search scans bounded descending UID
-windows. Message retrieval gets metadata, selected headers, BODYSTRUCTURE, and
-at most one selected plain-text MIME section. A guarded connection applies the 4 MiB
-inbound session limit. It also limits protocol nesting and lists before go-imap
-creates a recursive BODYSTRUCTURE.
+windows. Each read asks for one FETCH projection: summary for search, reply
+headers for reply, and the full message with BODYSTRUCTURE for message
+retrieval. Only the full projection processes the MIME tree. A guarded
+connection applies the 4 MiB inbound session limit. It also limits protocol
+nesting and lists before go-imap creates a recursive BODYSTRUCTURE.
+
+A guarded STORE also needs the tagged status line of its own command, because
+go-imap discards a tagged OK response code. The same guard scan reports the
+completed protocol lines of that one command to a bounded observer. The
+observer binds the tag of the outbound STORE line and reads only the tagged
+status, so no other command response is evidence and no wire limit changes.
 
 Mutation sessions select the source mailbox for read and write. They compare
 UIDVALIDITY before mutation. Only one mutation runs at a time. The client never
@@ -288,11 +308,13 @@ result text in memory under the contract below.
 - A Mail message reference is `(mailbox, UIDVALIDITY, UID)`. Get and mutation
   compare UIDVALIDITY after selecting the mailbox. Search cursors pair
   `before_uid` with the preceding page's UIDVALIDITY.
-- Reads expose MODSEQ when CONDSTORE is available. The current adapter cannot
-  safely detect tagged MODIFIED responses.
-- Thus, a conditional flag mutation fails with `protocol_error` before STORE. It
-  does not become an unconditional update.
-- This unavailable beta.8 path does not report `concurrent_modification`.
+- Reads expose MODSEQ when CONDSTORE is available. The adapter observes the
+  tagged status of the guarded STORE it sent, so it detects `MODIFIED`.
+- Thus, a conditional flag mutation keeps its atomic precondition. A tagged
+  `MODIFIED` for this UID returns `concurrent_modification`. A dispatched but
+  unverifiable STORE returns `outcome_unknown`, never a success.
+- The capability flag reports true only for a guarded session on a CONDSTORE
+  server. No path falls back to an unconditional STORE.
 
 ## Update idempotency
 
@@ -389,7 +411,7 @@ dependencies. If you add a direct dependency, add its justification here.
 | `github.com/teambition/rrule-go` | `v1.8.2` | Bounded recurrence with timezone preservation |
 | `golang.org/x/time` | `v0.16.0` | Per-domain rate limiters |
 | `github.com/emersion/go-vcard` | `v0.1.0` | vCard 3.0/4.0 read, 3.0 write |
-| `github.com/emersion/go-imap/v2` | `v2.0.0-beta.8` | IMAP behind `internal/mail/imapadapter` |
+| `github.com/emersion/go-imap/v2` | `v2.0.0-beta.9` | IMAP behind `internal/mail/imapadapter` |
 | `github.com/emersion/go-message` | `v0.18.2` | MIME / plain-text bounds |
 | `github.com/emersion/go-smtp` | `v0.25.0` | SMTP + STARTTLS |
 | `github.com/emersion/go-sasl` | `v0.0.0-20241020182733-b788ff22d5a6` | SASL PLAIN after STARTTLS |

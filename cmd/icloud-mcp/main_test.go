@@ -220,6 +220,19 @@ func TestBootRedactorExcludesDisabledMailCredentials(t *testing.T) {
 	}
 }
 
+func TestBootRedactorIncludesMailFrom(t *testing.T) {
+	cfg := &config.Config{
+		EnableMail:   true,
+		MailAddress:  "login-user@icloud.com",
+		MailFrom:     "alias-sender@custom.example",
+		MailPassword: "mail-app-secret",
+	}
+	output := newBootRedactor(cfg).Redact("sent as " + cfg.MailFrom)
+	if strings.Contains(output, cfg.MailFrom) || !strings.Contains(output, "[REDACTED]") {
+		t.Fatalf("configured sender was not redacted: %q", output)
+	}
+}
+
 func TestOptionalServiceConstructionIsLazyAndGated(t *testing.T) {
 	base := config.Config{
 		Email:        "calendar-user@example.com",
@@ -297,11 +310,12 @@ func TestOptionalServiceConstructionIsLazyAndGated(t *testing.T) {
 
 func TestProductionServerEnforcesStrictInputSchemas(t *testing.T) {
 	redactor := security.NewRedactor("unused-secret")
-	mcpServer := newMCPServer(redactor)
+	plan := mcptools.NewCapabilityPlan(true, false, false, false, false)
+	mcpServer := newMCPServer(redactor, plan)
 	svc := &icloud.MockService{}
 	mcptools.RegisterUnified(mcpServer, mcptools.Deps{
 		Service: svc, Redactor: redactor, DefaultLocation: time.UTC,
-	}, mcptools.NewCapabilityPlan(true, false, false, false, false))
+	}, plan)
 
 	searchTool := mcpServer.ListTools()["search_events"]
 	if searchTool == nil {
