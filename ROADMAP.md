@@ -4,7 +4,7 @@ Diese Datei gilt nur für den Fork. Sie soll reichen, damit eine Session ohne Vo
 
 - Fork: https://github.com/petter1/icloud-mcp (`origin`)
 - Upstream: https://github.com/ThomasCrouzet/icloud-mcp (`upstream`), MIT, Go ≥ 1.26, ein Hauptautor, aktiv (v1.1.0 vom 09.11.2026)
-- Stand 18.11.2026: Fork liegt **12 Commits hinter `upstream/main`** und hat ausser dieser Roadmap keine eigenen Änderungen
+- Stand 20.11.2026: `upstream/main` (v1.2.0) geprüft und in den Branch `sync/upstream-v1.2.0` nachgezogen (ohne Konflikte, nicht gepusht). `main` bleibt auf dem alten Stand, bis Build und Tests gelaufen sind.
 - Schwesterprojekt: https://github.com/petter1/orchard-mcp (TypeScript + Swift, macOS-Apps, siehe dort `ROADMAP.md`)
 
 ## Ziel und Rolle
@@ -42,6 +42,15 @@ icloud-mcp ist der iCloud-Zugang ohne Mac: Kalender über CalDAV, Kontakte über
 - `READ_ONLY` entfernt alle Schreib-Tools zentral. Mail-Lesen nutzt `EXAMINE` + `PEEK`. Verschieben läuft per IMAP `MOVE`.
 - Risiko: kleines Projekt mit einem Autor und automatisch gemergten Dependabot-Updates. Deshalb aus dem Fork selbst bauen.
 
+## Upstream-Review 20.11.2026 (v1.1.0 → v1.2.0)
+
+- Keine neuen Netzziele (weiterhin nur `caldav.icloud.com`, `contacts.icloud.com`), kein `exec`, keine TLS-Ausnahmen.
+- Neu `ICLOUD_MAIL_FROM` (optionaler Absender, z. B. Alias einer eigenen Domain). Wird wie die übrigen Zugangsdaten über `loadCredential` geladen und als volle Mail-Adresse geprüft.
+- Abhängigkeiten: `go-imap/v2` beta.8 → beta.9, `go-smtp` 0.25.1 → 0.26.0, `golang.org/x/text` 0.43 → 0.44. CI auf Go 1.26.11 (Security-Fix). Actions weiterhin per SHA gepinnt.
+- Sonst viele Korrekturen bei Kalender (Ganztagestermine, Wiederholungen, DST-Warnungen), Mail (MIME, CONDSTORE-Flags) und Kontakten (Paging).
+- Tools v1.2.0: `list_calendars`, `search_events`, `get_event`, `create_event`, `update_event`, `delete_event`, `validate_event`, `find_free_slots`, `calendar_capabilities`, `list_address_books`, `search_contacts`, `get_contact`, `create_contact`, `update_contact`, `delete_contact`, `list_mailboxes`, `search_messages`, `get_message`, `move_message`, `trash_message`, `set_message_flags`, `send_message`, `reply_message`, `icloud_capabilities`. `create_mailbox` und Batch-Move fehlen weiterhin (#2, #4).
+- **Offen:** Auf dem Mac ist kein Go installiert. Bauen und `go test ./...` stehen noch aus.
+
 ## Verbesserungen
 
 | # | Lücke | Verbesserung | Phase |
@@ -56,7 +65,7 @@ icloud-mcp ist der iCloud-Zugang ohne Mac: Kalender über CalDAV, Kontakte über
 
 | Phase | Inhalt | Status |
 |---|---|---|
-| 1 Setup | Fork ✅ 13.11. · upstream geprüft nachziehen · Zugangsdaten anlegen, `--doctor`, Lesen testen · eigener Build (#5), Claude-Config auf eigenen Build umstellen | noch nicht eingeplant |
+| 1 Setup | Fork ✅ 13.11. · upstream geprüft ✅ 20.11. (Branch `sync/upstream-v1.2.0`) · Go installieren, bauen, testen · Zugangsdaten anlegen, `--doctor`, Lesen testen · eigener Build (#5), Claude-Config auf eigenen Build umstellen | begonnen 20.11.2026 |
 | 2 Mail | #1, #2, #4 | noch nicht eingeplant |
 | 3 Abklären | #3 Reminders | noch nicht eingeplant |
 | 4 Abschluss | Tests, README, Upstream-PRs | noch nicht eingeplant |
