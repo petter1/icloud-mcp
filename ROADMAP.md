@@ -4,7 +4,7 @@ Diese Datei gilt nur für den Fork. Sie soll reichen, damit eine Session ohne Vo
 
 - Fork: https://github.com/petter1/icloud-mcp (`origin`)
 - Upstream: https://github.com/ThomasCrouzet/icloud-mcp (`upstream`), MIT, Go ≥ 1.26, ein Hauptautor, aktiv (v1.1.0 vom 09.11.2026)
-- Stand 20.11.2026: `upstream/main` (v1.2.0) geprüft, über den Branch `sync/upstream-v1.2.0` in `main` gemergt (ohne Konflikte, nicht gepusht). Go 1.27.4 per Homebrew installiert; `go build`, `go vet`, `go test ./...` und `go test -race ./...` grün. Binary per `go install` in `~/go/bin/icloud-mcp`.
+- Stand 20.11.2026: `upstream/main` (v1.2.0) geprüft, über den Branch `sync/upstream-v1.2.0` in `main` gemergt (ohne Konflikte). Go 1.27.4 per Homebrew installiert; `go build`, `go vet`, `go test ./...` und `go test -race ./...` grün. Binary per `go install` in `~/go/bin/icloud-mcp`.
 - Schwesterprojekt: https://github.com/petter1/orchard-mcp (TypeScript + Swift, macOS-Apps, siehe dort `ROADMAP.md`)
 
 ## Ziel und Rolle
@@ -51,17 +51,17 @@ icloud-mcp ist der iCloud-Zugang ohne Mac: Kalender über CalDAV, Kontakte über
 - Neu `ICLOUD_MAIL_FROM` (optionaler Absender, z. B. Alias einer eigenen Domain). Wird wie die übrigen Zugangsdaten über `loadCredential` geladen und als volle Mail-Adresse geprüft.
 - Abhängigkeiten: `go-imap/v2` beta.8 → beta.9, `go-smtp` 0.25.1 → 0.26.0, `golang.org/x/text` 0.43 → 0.44. CI auf Go 1.26.11 (Security-Fix). Actions weiterhin per SHA gepinnt.
 - Sonst viele Korrekturen bei Kalender (Ganztagestermine, Wiederholungen, DST-Warnungen), Mail (MIME, CONDSTORE-Flags) und Kontakten (Paging).
-- Tools v1.2.0: `list_calendars`, `search_events`, `get_event`, `create_event`, `update_event`, `delete_event`, `validate_event`, `find_free_slots`, `calendar_capabilities`, `list_address_books`, `search_contacts`, `get_contact`, `create_contact`, `update_contact`, `delete_contact`, `list_mailboxes`, `search_messages`, `get_message`, `move_message`, `trash_message`, `set_message_flags`, `send_message`, `reply_message`, `icloud_capabilities`. `create_mailbox` und Batch-Move fehlen upstream weiterhin (#2, #4), sind im Fork aber schon gebaut: Branches `feat/create-mailbox` und `feat/move-messages` (Cloud-Session 18.11., Fork-PR #1, Basis v1.1.1). Dazu `feat/custom-mail-server` (Fork-PR #2) und `feat/setup-ui` (WIP). Diese Branches vor neuer Arbeit prüfen, nicht neu bauen. Auf v1.2.0 nachgezogen ✅ 20.11.: `feat/create-mailbox-v1.2` und `feat/move-messages-v1.2` (je allein Build, Vet und Tests grün; zusammen gemergt gibt es noch Konflikte in Mail-Registrierung und Tests). `feat/custom-mail-server` und `feat/setup-ui` noch nicht nachgezogen.
+- Tools v1.2.0: `list_calendars`, `search_events`, `get_event`, `create_event`, `update_event`, `delete_event`, `validate_event`, `find_free_slots`, `calendar_capabilities`, `list_address_books`, `search_contacts`, `get_contact`, `create_contact`, `update_contact`, `delete_contact`, `list_mailboxes`, `search_messages`, `get_message`, `move_message`, `trash_message`, `set_message_flags`, `send_message`, `reply_message`, `icloud_capabilities`. `create_mailbox` und Batch-Move fehlen upstream weiterhin (#2, #4), sind im Fork gebaut. Stand Branches siehe «Verbesserungen» und «Branches» unten.
 - Build und Tests ✅ 20.11.2026 (Go 1.27.4, inkl. `-race`).
 
 ## Verbesserungen
 
 | # | Lücke | Verbesserung | Phase |
 |---|---|---|---|
-| 1 | Mail nur iCloud (`imap.mail.me.com` fest im Code) | Weitere IMAP/SMTP-Konten konfigurierbar (eigene Domains). Allowlist pro Konto explizit, kein freies Host-Ziel. | 2 |
-| 2 | Mail-Ordner lassen sich nicht anlegen | `create_mailbox` | 2 |
+| 1 | Mail nur iCloud (`imap.mail.me.com` fest im Code) | Weitere IMAP/SMTP-Konten konfigurierbar (eigene Domains). Allowlist pro Konto explizit, kein freies Host-Ziel. | 2 · Code fertig (Cloud 19.11., Fork-PR #2): ein eigener Server pro Prozess (`ICLOUD_MCP_IMAP_SERVER`, `ICLOUD_MCP_SMTP_SERVER`). Auf v1.2.0 nachgezogen ✅ 20.11. als `feat/custom-mail-server-v1.2`, `make check` grün. **Wartet auf Yaniks Review**, weil es die erlaubten Netzziele ändert. GUI dazu: `feat/setup-ui` (WIP, nicht nachgezogen). |
+| 2 | Mail-Ordner lassen sich nicht anlegen | `create_mailbox` | 2 · ✅ 20.11. in `main` (Cloud 18.11., auf v1.2.0 nachgezogen) |
 | 3 | Keine Reminders (neue iCloud-Reminders vermutlich nicht über CalDAV erreichbar) | Abklären, ob machbar. Sonst bleiben Reminders beim Mac/Orchard. | 3 |
-| 4 | `move_message` nur einzeln | Batch-Move mit Rückgabe der neuen UIDs | 2 |
+| 4 | `move_message` nur einzeln | Batch-Move mit Rückgabe der neuen UIDs | 2 · ✅ 20.11. in `main`: `move_messages` (1–50 UIDs, neue UIDs in Anfrage-Reihenfolge). Zusammen mit #2: 26 Tools bei voller Freigabe, `make check` grün. |
 | 5 | Release-Binary aus fremder CI | Eigener Build aus dem Fork | 1 |
 
 ## Phasen
@@ -69,9 +69,22 @@ icloud-mcp ist der iCloud-Zugang ohne Mac: Kalender über CalDAV, Kontakte über
 | Phase | Inhalt | Status |
 |---|---|---|
 | 1 Setup | Fork ✅ 13.11. · upstream geprüft und gemergt ✅ 20.11. · Go installiert, gebaut, getestet ✅ 20.11. · Zugangsdaten anlegen, `--doctor`, Lesen testen · eigener Build (#5), Claude-Config auf eigenen Build umstellen | begonnen 20.11.2026 |
-| 2 Mail | #1, #2, #4 | noch nicht eingeplant |
+| 2 Mail | #1, #2, #4 | #2, #4 ✅ 20.11. in `main` · #1 wartet auf Review |
 | 3 Abklären | #3 Reminders | noch nicht eingeplant |
-| 4 Abschluss | Tests, README, Upstream-PRs | noch nicht eingeplant |
+| 4 Abschluss | Tests, README (kein Upstreaming, Entscheid 19.11.) | offen |
 | 5 Anbindung Orchard | Zusammen mit Orchard Phase 5: Orchard startet icloud-mcp als Kindprozess (stdio), Tool-Zuordnung siehe `ROADMAP.md` im Orchard-Fork. Hier höchstens Kleinigkeiten nötig, z. B. stabile, maschinenlesbare Antworten. | nach Orchard Phase 1–4, frühestens 2027 |
 
 Phase 1 ist Voraussetzung für Orchard Phase 5.
+
+## Branches (Stand 20.11.2026, alle auf `origin`)
+
+| Branch | Inhalt | Status |
+|---|---|---|
+| `main` | upstream v1.2.0 + `create_mailbox` + `move_messages` | aktueller Stand, Binary per `go install` |
+| `feat/mail-batch-v1.2` | dasselbe wie `main` (Arbeitsbranch) | erledigt |
+| `feat/create-mailbox-v1.2`, `feat/move-messages-v1.2` | einzeln auf v1.2.0 | erledigt, in `main` |
+| `feat/custom-mail-server-v1.2` | #1 auf v1.2.0 | wartet auf Review (Fork-PR #2) |
+| `feat/setup-ui` | GUI für Mailkonten, Basis v1.1.1 | WIP, Guard-Entscheid offen |
+| `feat/create-mailbox`, `feat/move-messages`, `feat/custom-mail-server` | Cloud-Stände auf v1.1.1 | überholt durch die `-v1.2`-Branches |
+| `archive/cloud/claude/inspiring-cray-n2nrrt` | Cloud-Session 18.11. (Fork-PR #1, geschlossen) | Archiv |
+| `sync/upstream-v1.2.0` | Upstream-Merge v1.2.0 | erledigt, in `main` |
