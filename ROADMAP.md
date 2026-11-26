@@ -64,9 +64,9 @@ icloud-mcp ist der iCloud-Zugang ohne Mac: Kalender über CalDAV, Kontakte über
 | 3 | Keine Reminders (neue iCloud-Reminders vermutlich nicht über CalDAV erreichbar) | Abklären, ob machbar. Sonst bleiben Reminders beim Mac/Orchard. | 3 |
 | 4 | `move_message` nur einzeln | Batch-Move mit Rückgabe der neuen UIDs | 2 · ✅ 20.11. in `main`: `move_messages` (1–50 UIDs, neue UIDs in Anfrage-Reihenfolge). Zusammen mit #2: 26 Tools bei voller Freigabe, `make check` grün. |
 | 5 | Release-Binary aus fremder CI | Eigener Build aus dem Fork | 1 |
-| 6 | Keine Entwürfe: `send_message` sendet direkt (Gegenstück zu Orchard #14, dort ✅ 27.11.) | `create_draft` per IMAP `APPEND` in den Drafts-Ordner mit `\Draft`-Flag, optional Anhänge (Pfadgrenze wie Orchard: nur unter Home, max. 10 Dateien / 25 MB), Rückgabe von UID und Message-ID. Sendet nie. | 2 · offen |
-| 7 | Mails lassen sich nicht exportieren (Gegenstück zu Orchard #15) | `export_message` mit `format: eml` (Rohquelle per IMAP); PDF nur, wenn ohne Browser-Engine machbar, sonst bleibt PDF beim Mac/Orchard | 2 · offen |
-| 8 | Breite Suche kann ins Zeitlimit laufen (Gegenstück zu Orchard #16) | Prüfen, ob `search_messages` über viele Ordner Teilergebnisse statt Abbruch liefern kann; Fehlermeldung mit Alternative | 2 · offen |
+| 6 | Keine Entwürfe: `send_message` sendet direkt (Gegenstück zu Orchard #14, dort ✅ 27.11.) | `create_draft` per IMAP `APPEND` in den Drafts-Ordner mit `\Draft`-Flag, optional Anhänge (Pfadgrenze wie Orchard: nur unter Home, max. 10 Dateien / 25 MB; Antwortfelder wie Orchard: `messageId`, `draftMailbox`), Rückgabe von UID und Message-ID. Sendet nie. | 2 · offen |
+| 7 | Mails lassen sich nicht exportieren (Gegenstück zu Orchard #15, dort ✅ 27.11.: `mail_export_message`, PDF mit gesperrten externen Inhalten) | `export_message` mit `format: eml` (Rohquelle per IMAP); PDF nur, wenn ohne Browser-Engine machbar, sonst bleibt PDF beim Mac/Orchard | 2 · offen |
+| 8 | Breite Suche kann ins Zeitlimit laufen (Gegenstück zu Orchard #16, dort ✅ 27.11.: Zeitbudget, danach `partial: true` + `unsearchedMailboxes`) | Prüfen, ob `search_messages` über viele Ordner Teilergebnisse statt Abbruch liefern kann; Fehlermeldung mit Alternative | 2 · offen |
 
 ## Phasen
 
