@@ -26,6 +26,7 @@ icloud-mcp ist der iCloud-Zugang ohne Mac: Kalender über CalDAV, Kontakte über
 - Eine Änderung pro Branch, abgezweigt vom Fork-`main`, Commits auf Englisch.
 - **Keine Interaktion mit upstream (Entscheid Yanik 18.11.2026):** Claude öffnet keine PRs, Issues oder Kommentare im Upstream-Repo. **Kein aktives Upstreaming (19.11.2026):** Der Fork darf sich frei entwickeln; Upstream-Updates (v. a. Sicherheitsfixes) weiterhin geprüft nachziehen.
 - Roadmap ohne feste Termine, nur Reihenfolge (Entscheid 19.11.2026).
+- **Beide Forks gemeinsam weiterentwickeln (Entscheid 27.11.2026):** Jede neue Funktion oder Luecke in einem Fork auch fuer den anderen ansehen und dort in der ROADMAP eintragen (Orchard-Tool und icloud-mcp-Gegenstueck mit gleicher Bedeutung).
 - **GitHub immer aktuell (Entscheid 20.11.2026):** Jeder fertige Branch und jede Roadmap-Änderung sofort nach `origin` pushen. Vor neuer Arbeit `git fetch origin`, offene Fork-PRs und diese Roadmap auf `main` prüfen. Roadmap-Änderungen auf `main` nachführen, nicht nur im Session-Branch (sonst Doppelarbeit wie 18.–20.11.).
 - Nach jedem erledigten Schritt hier den Status nachführen (✅ + Datum).
 
