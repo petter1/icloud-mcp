@@ -64,13 +64,16 @@ icloud-mcp ist der iCloud-Zugang ohne Mac: Kalender über CalDAV, Kontakte über
 | 3 | Keine Reminders (neue iCloud-Reminders vermutlich nicht über CalDAV erreichbar) | Abklären, ob machbar. Sonst bleiben Reminders beim Mac/Orchard. | 3 |
 | 4 | `move_message` nur einzeln | Batch-Move mit Rückgabe der neuen UIDs | 2 · ✅ 20.11. in `main`: `move_messages` (1–50 UIDs, neue UIDs in Anfrage-Reihenfolge). Zusammen mit #2: 26 Tools bei voller Freigabe, `make check` grün. |
 | 5 | Release-Binary aus fremder CI | Eigener Build aus dem Fork | 1 |
+| 6 | Keine Entwürfe: `send_message` sendet direkt (Gegenstück zu Orchard #14, dort ✅ 27.11.) | `create_draft` per IMAP `APPEND` in den Drafts-Ordner mit `\Draft`-Flag, optional Anhänge (Pfadgrenze wie Orchard: nur unter Home, max. 10 Dateien / 25 MB), Rückgabe von UID und Message-ID. Sendet nie. | 2 · offen |
+| 7 | Mails lassen sich nicht exportieren (Gegenstück zu Orchard #15) | `export_message` mit `format: eml` (Rohquelle per IMAP); PDF nur, wenn ohne Browser-Engine machbar, sonst bleibt PDF beim Mac/Orchard | 2 · offen |
+| 8 | Breite Suche kann ins Zeitlimit laufen (Gegenstück zu Orchard #16) | Prüfen, ob `search_messages` über viele Ordner Teilergebnisse statt Abbruch liefern kann; Fehlermeldung mit Alternative | 2 · offen |
 
 ## Phasen
 
 | Phase | Inhalt | Status |
 |---|---|---|
 | 1 Setup | Fork ✅ 13.11. · upstream geprüft und gemergt ✅ 20.11. · Go installiert, gebaut, getestet ✅ 20.11. · Zugangsdaten anlegen, `--doctor`, Lesen testen · eigener Build (#5), Claude-Config auf eigenen Build umstellen | begonnen 20.11.2026 |
-| 2 Mail | #1, #2, #4 | #2, #4 ✅ 20.11. in `main` · #1 wartet auf Review |
+| 2 Mail | #1, #2, #4, #6–#8 | #2, #4 ✅ 20.11. in `main` · #1 wartet auf Review |
 | 3 Abklären | #3 Reminders | noch nicht eingeplant |
 | 4 Abschluss | Tests, README (kein Upstreaming, Entscheid 19.11.) | offen |
 | 5 Anbindung Orchard | Zusammen mit Orchard Phase 5: Orchard startet icloud-mcp als Kindprozess (stdio), Tool-Zuordnung siehe `ROADMAP.md` im Orchard-Fork. Hier höchstens Kleinigkeiten nötig, z. B. stabile, maschinenlesbare Antworten. | Orchard-Seite ✅ 20.11.2026 (Orchard `main`, `src/icloud/`): startet icloud-mcp per `ICLOUD_MCP_BIN`, Smoke-Test gegen dieses Binary lokal ok. Offen: echter Test auf Linux, braucht Phase 1 (Zugangsdaten). |
