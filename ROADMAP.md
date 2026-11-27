@@ -83,6 +83,8 @@ icloud-mcp ist der iCloud-Zugang ohne Mac: Kalender über CalDAV, Kontakte über
 
 Phase 1 ist Voraussetzung für Orchard Phase 5.
 
+**27.11.2026:** Der Linux-Rechner soll die Dauerlösung werden (Claude-Code-Session mit Remote Control, unterwegs vom iPhone), siehe Orchard Phase 7. Damit werden Phase 1 und die Lücken #10, #11 (Kontakte schreiben/auflisten) und #3 (Reminders) wichtiger: Was icloud-mcp nicht kann, fehlt unterwegs.
+
 ## Branches (Stand 20.11.2026, alle auf `origin`)
 
 | Branch | Inhalt | Status |
