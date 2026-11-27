@@ -67,6 +67,7 @@ icloud-mcp ist der iCloud-Zugang ohne Mac: Kalender über CalDAV, Kontakte über
 | 6 | Keine Entwürfe: `send_message` sendet direkt (Gegenstück zu Orchard #14, dort ✅ 27.11.) | `create_draft` per IMAP `APPEND` in den Drafts-Ordner mit `\Draft`-Flag, optional Anhänge (Pfadgrenze wie Orchard: nur unter Home, max. 10 Dateien / 25 MB; Antwortfelder wie Orchard: `messageId`, `draftMailbox`), Rückgabe von UID und Message-ID. Sendet nie. | 2 · offen |
 | 7 | Mails lassen sich nicht exportieren (Gegenstück zu Orchard #15, dort ✅ 27.11.: `mail_export_message`, PDF mit gesperrten externen Inhalten) | `export_message` mit `format: eml` (Rohquelle per IMAP); PDF nur, wenn ohne Browser-Engine machbar, sonst bleibt PDF beim Mac/Orchard | 2 · offen |
 | 8 | Breite Suche kann ins Zeitlimit laufen (Gegenstück zu Orchard #16, dort ✅ 27.11.: Zeitbudget, danach `partial: true` + `unsearchedMailboxes`) | Prüfen, ob `search_messages` über viele Ordner Teilergebnisse statt Abbruch liefern kann; Fehlermeldung mit Alternative | 2 · offen |
+| 9 | iMessage lesen (Gegenstück zu Orchard Phase 6, dort ✅ 27.11. als `messages_*`, nur macOS) | Nicht machbar: iCloud bietet keine Schnittstelle für Nachrichten (nur verschlüsselt in «Nachrichten in iCloud»). Auf Linux deckt der geplante Matrix-Weg (Orchard Phase 6) die Messenger ab. | – · bewusst nicht umgesetzt |
 
 ## Phasen
 
