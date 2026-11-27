@@ -69,6 +69,7 @@ icloud-mcp ist der iCloud-Zugang ohne Mac: Kalender über CalDAV, Kontakte über
 | 8 | Breite Suche kann ins Zeitlimit laufen (Gegenstück zu Orchard #16, dort ✅ 27.11.: Zeitbudget, danach `partial: true` + `unsearchedMailboxes`) | Prüfen, ob `search_messages` über viele Ordner Teilergebnisse statt Abbruch liefern kann; Fehlermeldung mit Alternative | 2 · offen |
 | 9 | iMessage lesen (Gegenstück zu Orchard Phase 6, dort ✅ 27.11. als `messages_*`, nur macOS) | Nicht machbar: iCloud bietet keine Schnittstelle für Nachrichten (nur verschlüsselt in «Nachrichten in iCloud»). Auf Linux deckt der geplante Matrix-Weg (Orchard Phase 6) die Messenger ab. | – · bewusst nicht umgesetzt |
 | 10 | Kontakte lassen sich nicht in Gruppen ordnen, Nummern nicht vereinheitlichen (Gegenstück zu Orchard #20, dort ✅ 27.11.: Gruppen anlegen/umbenennen/löschen, Mitglieder, `normalize_phones` mit Vorschau) | Gruppen über CardDAV (Apple speichert sie als vCard mit `X-ADDRESSBOOKSERVER-KIND:group` und `X-ADDRESSBOOKSERVER-MEMBER`), dazu `normalize_phones` mit denselben Regeln (letzte 9 Ziffern, Vorschau zuerst) | 2 · offen. Linux-Orchard bräuchte das für dieselben Tools. |
+| 11 | Kein Tool listet alle Kontakte mit Paging auf (Gegenstück zu Orchard #21, dort ✅ 27.11. als `contacts.list_contacts`). | Alle vCards des Adressbuchs über CardDAV holen, nach Name sortieren, `limit`/`offset`/`hasMore` wie bei Orchard. | offen |
 
 ## Phasen
 
