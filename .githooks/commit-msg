@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Local mirror of the CI "public text policy" for commit messages.
+# Enable once per clone with: make hooks
+set -euo pipefail
+
+non_ascii=$'[^\t -~]'
+automated_attribution='^[[:space:]]*Co-Authored-By[[:space:]]*:.*(claude|anthropic|openai|chatgpt|codex|copilot|gemini|gpt|assistant|language[[:space:]]+model|automation[[:space:]]+bot)'
+provenance_signature='^[[:space:]#*/;>-]*(Auto[ -]?)?(Generated|Assisted)[ -]By[[:space:]:]'
+
+# Git drops comment lines after this hook runs, so ignore them here.
+body="$(grep -v '^#' "$1" || true)"
+status=0
+if printf '%s\n' "$body" | LC_ALL=C grep -nE "$non_ascii"; then
+  echo "commit-msg: non-ASCII characters in the commit message (use ae/oe/ue)." >&2
+  status=1
+fi
+if printf '%s\n' "$body" | grep -niE "(${automated_attribution})|(${provenance_signature})"; then
+  echo "commit-msg: automated attribution trailers are not allowed." >&2
+  status=1
+fi
+exit "$status"

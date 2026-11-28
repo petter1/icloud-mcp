@@ -24,6 +24,7 @@ icloud-mcp ist der iCloud-Zugang ohne Mac: Kalender ueber CalDAV, Kontakte ueber
 - **Zugangsdaten nie ins Repo, in Logs oder in den Chat.** Sie liegen auf dem Rechner in `~/.config/icloud-mcp/` (`email`, `mail_address`, `password`, je `chmod 600`, app-spezifisches Apple-Passwort) und werden vom Besitzer selbst angelegt.
 - **Upstream nicht blind nachziehen.** Upstream mergt Dependabot-Updates automatisch. Vor dem Merge von `upstream/main` die neuen Commits und Abhaengigkeiten ansehen.
 - Eine Aenderung pro Branch, abgezweigt vom Fork-`main`, Commits auf Englisch.
+- **Nur ASCII (Entscheid 28.11.2026):** Alle `*.md` und Commit-Nachrichten nur ASCII (ae/oe/ue, [x] statt Haken), keine `Co-Authored-By`-Trailer fuer KI-Tools. Die CI bricht sonst ab ("public text policy"). Nach dem Klonen einmal `make hooks`, dann pruefen `.githooks/pre-commit` und `.githooks/commit-msg` das lokal. Ohne Hooks vor dem Push pruefen: `LC_ALL=C grep -n $'[^\t -~]' *.md` (bash/zsh).
 - **Keine Interaktion mit upstream (Entscheid Yanik 18.11.2026):** Claude oeffnet keine PRs, Issues oder Kommentare im Upstream-Repo. **Kein aktives Upstreaming (19.11.2026):** Der Fork darf sich frei entwickeln; Upstream-Updates (v. a. Sicherheitsfixes) weiterhin geprueft nachziehen.
 - Roadmap ohne feste Termine, nur Reihenfolge (Entscheid 19.11.2026).
 - **Beide Forks gemeinsam weiterentwickeln (Entscheid 27.11.2026):** Jede neue Funktion oder Luecke in einem Fork auch fuer den anderen ansehen und dort in der ROADMAP eintragen (Orchard-Tool und icloud-mcp-Gegenstueck mit gleicher Bedeutung).

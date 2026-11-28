@@ -25,7 +25,7 @@ BUILDFLAGS := -trimpath -buildvcs=false -ldflags='$(LDFLAGS)'
 TARGETS  := linux/amd64 linux/arm64 darwin/arm64
 RELEASE_FILES := LICENSE THIRD_PARTY_NOTICES.md
 
-.PHONY: build check-release-version check-release-clean check-release-metadata check-release-candidates check-registry check-docs check-platforms release release-all install test protocol-evidence bench-smoke bench-full lint vet cover clean help
+.PHONY: build check-release-version check-release-clean check-release-metadata check-release-candidates check-registry check-docs check-platforms release release-all install test protocol-evidence bench-smoke bench-full lint vet cover clean hooks help
 
 build: ## Build a local binary with the host toolchain. Include VERSION (default dev).
 	@mkdir -p $(BIN_DIR)
@@ -198,6 +198,9 @@ GOLANGCI_LINT_VERSION := v2.15.0
 
 lint: vet ## Run go vet and a fixed golangci-lint version with go run.
 	$(GO) run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run --timeout=5m ./...
+
+hooks: ## Use the ASCII and attribution checks in .githooks for local commits.
+	git config core.hooksPath .githooks
 
 clean: ## Move build artifacts to a recoverable backup under /tmp.
 	@set -eu; \

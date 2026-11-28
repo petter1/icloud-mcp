@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Local mirror of the CI "public text policy" for staged text files.
+# Enable once per clone with: make hooks
+set -euo pipefail
+
+non_ascii=$'[^\t -~]'
+status=0
+while IFS= read -r -d '' file; do
+  if git show ":$file" | LC_ALL=C grep -n "$non_ascii" | sed "s|^|$file:|"; then
+    echo "pre-commit: non-ASCII content in $file (use ae/oe/ue, [x] instead of check marks)." >&2
+    status=1
+  fi
+done < <(git diff --cached --name-only -z --diff-filter=ACMR -- \
+  '*.md' '*.yml' '*.yaml' '*.example' '*.txt' 'Makefile' 'LICENSE*' 'NOTICE*' \
+  'THIRD_PARTY*' 'go.mod' 'go.sum' '.gitignore' '.golangci.yml')
+exit "$status"
