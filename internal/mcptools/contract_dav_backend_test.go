@@ -37,6 +37,8 @@ func newContractDAV(card bool) *contractDAVBackend {
 	}
 	if card {
 		b.objects[contractBookPath+"opaque.vcf"] = "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:contact\r\nFN:Synthetic Person\r\nN:Person;Synthetic;;;\r\nEMAIL:reply@example.invalid\r\nTEL:+331234\r\nNOTE:Original notes\r\nEND:VCARD\r\n"
+		b.objects[contractBookPath+"group.vcf"] = "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:group\r\nFN:Synthetic Group\r\nN:Synthetic Group\r\nX-ADDRESSBOOKSERVER-KIND:group\r\nX-ADDRESSBOOKSERVER-MEMBER:urn:uuid:contact\r\nEND:VCARD\r\n"
+		b.objects[contractBookPath+"empty.vcf"] = "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:empty\r\nFN:Empty Group\r\nN:Empty Group;;;;\r\nX-ADDRESSBOOKSERVER-KIND:group\r\nEND:VCARD\r\n"
 	} else {
 		b.objects[contractCalendar+"event.ics"] = strings.ReplaceAll("BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Contract fixture//EN\nBEGIN:VEVENT\nUID:event\nDTSTAMP:20260701T000000Z\nDTSTART:20260701T100000Z\nDTEND:20260701T110000Z\nSUMMARY:Synthetic event\nLOCATION:Room\nDESCRIPTION:Original notes\nSTATUS:CONFIRMED\nTRANSP:OPAQUE\nRRULE:FREQ=DAILY;COUNT=2\nEND:VEVENT\nEND:VCALENDAR\n", "\n", "\r\n")
 	}

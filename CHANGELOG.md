@@ -7,6 +7,22 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- Add contact groups and phone normalization over CardDAV. Apple stores a
+  group as its own vCard (`X-ADDRESSBOOKSERVER-KIND:group`, one
+  `X-ADDRESSBOOKSERVER-MEMBER:urn:uuid:<UID>` per member). Reads
+  (`contacts.read`): `list_groups` and `list_group_members` (offset paging).
+  Writes (`contacts.write`): `create_group` (unique name, If-None-Match),
+  `rename_group`, `delete_group` (refuses a group with members unless
+  `force`), `add_to_group`, `remove_from_group` (1-100 contact UIDs), and
+  `normalize_phones`. Every group write edits only the group vCard with a
+  strong If-Match and reports a conflict instead of overwriting; no tool deletes
+  a contact. `normalize_phones` previews by default and saves only with
+  `apply=true`; it rewrites only TEL values (labels and other properties stay
+  byte for byte) with the rules of Orchard `contacts.normalize_phones`
+  (national plans CH, LI, DE, AT, FR, IT, NL, UK, US/CA), at most 100 changed
+  contacts per call, and reports saves stopped by the write rate limit as
+  `failed` with `rate_limited`.
+- Accept Apple group vCards whose `N` holds only the group name.
 - Add `list_contacts` to the Contacts read group (`contacts.read`). It lists
   every contact summary (groups excluded) in the authorized address books,
   sorted like `search_contacts`, with `offset`/`limit` paging (default 100,

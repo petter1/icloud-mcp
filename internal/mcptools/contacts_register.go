@@ -18,12 +18,22 @@ func RegisterContacts(s *server.MCPServer, deps ContactsDeps, allowRead, allowWr
 		s.AddTool(newSearchContactsTool(), searchContactsHandler(deps))
 		s.AddTool(newListContactsTool(), listContactsHandler(deps))
 		s.AddTool(newGetContactTool(), getContactHandler(deps))
-		names = append(names, "list_address_books", "search_contacts", "list_contacts", "get_contact")
+		s.AddTool(newListGroupsTool(), listGroupsHandler(deps))
+		s.AddTool(newListGroupMembersTool(), listGroupMembersHandler(deps))
+		names = append(names, contactsReadToolNames()...)
 	}
 	if allowWrite {
 		s.AddTool(newCreateContactTool(), createContactHandler(deps))
 		s.AddTool(newUpdateContactTool(), updateContactHandler(deps))
-		names = append(names, "create_contact", "update_contact")
+		// Group writes edit only group vCards, and normalize_phones only TEL
+		// values, so they share the create/update gate; no contact is deleted.
+		s.AddTool(newCreateGroupTool(), createGroupHandler(deps))
+		s.AddTool(newRenameGroupTool(), renameGroupHandler(deps))
+		s.AddTool(newDeleteGroupTool(), deleteGroupHandler(deps))
+		s.AddTool(newGroupMembershipTool(true), groupMembershipHandler(deps, true))
+		s.AddTool(newGroupMembershipTool(false), groupMembershipHandler(deps, false))
+		s.AddTool(newNormalizePhonesTool(), normalizePhonesHandler(deps))
+		names = append(names, contactsWriteToolNames()...)
 	}
 	if allowDelete {
 		s.AddTool(newDeleteContactTool(), deleteContactHandler(deps))

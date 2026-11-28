@@ -16,7 +16,7 @@ func TestContractRealServiceErrors(t *testing.T) {
 			}
 			f := newContractRuntime(t, contractProfile{plan: NewCapabilityPlan(false, true, true, true, true)}, func(f *contractRuntime) {
 				switch {
-				case strings.Contains(name, "contact") || name == "list_address_books":
+				case strings.Contains(name, "contact") || strings.Contains(name, "group") || name == "list_address_books" || name == "normalize_phones":
 					f.freshContacts = true
 					f.contacts.failureStatus = 403
 				case name == "send_message" || name == "reply_message":

@@ -111,14 +111,22 @@ func contractBusinessFixtures() map[string]contractBusinessFixture {
 		"search_events":   {when, map[string]any{"calendar": contractCalendar, "calendars": contractCalendar, "uid": "event", "query": "Synthetic", "limit": 1, "offset": 1, "all_day": false, "status": "CONFIRMED", "busy_only": true, "include_cancelled": true, "compact": true, "expand_recurrence": false, "cursor": "start"}},
 		"find_free_slots": {map[string]any{"start": when["start"], "end": when["end"], "duration_minutes": 60}, map[string]any{"calendar": contractCalendar, "calendars": contractCalendar, "timezone": "Europe/Paris", "working_hours_start": "09:00", "working_hours_end": "17:00", "days_of_week": "wed,thu", "buffer_before_minutes": 15, "buffer_after_minutes": 15, "include_all_day_busy": false, "limit": 2}},
 		"get_contact":     {book, nil}, "create_contact": {map[string]any{"address_book": "$book", "display_name": "New synthetic"}, contact},
-		"update_contact":    {map[string]any{"address_book": "$book", "uid": "contact", "display_name": "Changed"}, contractMerge(contractOmit(contact, "client_uid"), map[string]any{"etag": contractETag, "idempotency_key": "update-key"})},
-		"delete_contact":    {book, map[string]any{"etag": contractETag, "dry_run": true}},
-		"search_contacts":   {map[string]any{}, map[string]any{"address_book": "$book", "query": "Synthetic", "email": "reply", "phone": "1234", "include_groups": true, "limit": 1, "cursor": "start"}},
-		"list_contacts":     {map[string]any{}, map[string]any{"address_book": "$book", "limit": 1, "offset": 0}},
-		"get_message":       {identity(), map[string]any{"max_body_bytes": 4, "allow_html_fallback": true}},
-		"search_messages":   {map[string]any{"mailbox": "INBOX"}, map[string]any{"query": "Synthetic", "from": "reply", "to": "fixture", "subject": "Synthetic", "since": "2026-07-01", "before": "2026-07-03", "unseen_only": true, "flagged_only": true, "before_uid": 3, "uid_validity": 9, "limit": 1}},
-		"set_message_flags": {contractMerge(identity(), map[string]any{"operation": "add", "flags": []any{"seen"}}), map[string]any{"expected_modseq": 42}},
-		"move_message":      {contractMerge(identity(), map[string]any{"destination": "Archive"}), nil}, "trash_message": {identity(), nil},
+		"update_contact":     {map[string]any{"address_book": "$book", "uid": "contact", "display_name": "Changed"}, contractMerge(contractOmit(contact, "client_uid"), map[string]any{"etag": contractETag, "idempotency_key": "update-key"})},
+		"delete_contact":     {book, map[string]any{"etag": contractETag, "dry_run": true}},
+		"search_contacts":    {map[string]any{}, map[string]any{"address_book": "$book", "query": "Synthetic", "email": "reply", "phone": "1234", "include_groups": true, "limit": 1, "cursor": "start"}},
+		"list_contacts":      {map[string]any{}, map[string]any{"address_book": "$book", "limit": 1, "offset": 0}},
+		"list_groups":        {map[string]any{}, map[string]any{"address_book": "$book"}},
+		"list_group_members": {map[string]any{"address_book": "$book", "uid": "group"}, map[string]any{"limit": 1, "offset": 0}},
+		"create_group":       {map[string]any{"address_book": "$book", "name": "New synthetic group"}, nil},
+		"rename_group":       {map[string]any{"address_book": "$book", "uid": "group", "name": "Renamed group"}, map[string]any{"etag": contractETag}},
+		"delete_group":       {map[string]any{"address_book": "$book", "uid": "empty"}, map[string]any{"etag": contractETag, "force": true}},
+		"add_to_group":       {map[string]any{"address_book": "$book", "uid": "group", "contact_uids": []any{"contact"}}, map[string]any{"etag": contractETag}},
+		"remove_from_group":  {map[string]any{"address_book": "$book", "uid": "group", "contact_uids": []any{"contact"}}, map[string]any{"etag": contractETag}},
+		"normalize_phones":   {map[string]any{"address_book": "$book"}, map[string]any{"group_uid": "group", "contact_uids": []any{"contact"}, "country_code": "+41", "apply": true}},
+		"get_message":        {identity(), map[string]any{"max_body_bytes": 4, "allow_html_fallback": true}},
+		"search_messages":    {map[string]any{"mailbox": "INBOX"}, map[string]any{"query": "Synthetic", "from": "reply", "to": "fixture", "subject": "Synthetic", "since": "2026-07-01", "before": "2026-07-03", "unseen_only": true, "flagged_only": true, "before_uid": 3, "uid_validity": 9, "limit": 1}},
+		"set_message_flags":  {contractMerge(identity(), map[string]any{"operation": "add", "flags": []any{"seen"}}), map[string]any{"expected_modseq": 42}},
+		"move_message":       {contractMerge(identity(), map[string]any{"destination": "Archive"}), nil}, "trash_message": {identity(), nil},
 		"create_mailbox": {map[string]any{"name": "Synthetic folder"}, nil},
 		"move_messages":  {map[string]any{"mailbox": "INBOX", "uid_validity": 9, "uids": []any{2}, "destination": "Archive"}, nil},
 		"send_message":   {map[string]any{"to": []any{"recipient@example.invalid"}, "body": "Synthetic outgoing body"}, map[string]any{"cc": []any{"copy@example.invalid"}, "bcc": []any{"reply@example.invalid"}, "subject": "Synthetic subject", "idempotency_key": "send-key", "archive_sent": true}},
@@ -229,6 +237,18 @@ func (f *contractRuntime) verify(t *testing.T, name string, args map[string]any,
 		}
 		if payload["success"] != true || f.calendar.mutations != want {
 			t.Fatalf("Calendar delete effect: %v", payload)
+		}
+	case "create_group", "rename_group", "delete_group", "remove_from_group":
+		if payload["uid"] == nil && payload["group"] == nil || f.contacts.mutations != 1 {
+			t.Fatalf("no actual group write: %v", payload)
+		}
+	case "add_to_group":
+		if f.contacts.mutations != 0 || len(payload["alreadyMembers"].([]any)) != 1 {
+			t.Fatalf("existing member was written again: %v", payload)
+		}
+	case "normalize_phones":
+		if f.contacts.mutations != 0 || payload["contactsChanged"] != float64(0) {
+			t.Fatalf("an international number was rewritten: %v", payload)
 		}
 	case "create_contact", "update_contact":
 		if payload["uid"] == nil || f.contacts.mutations != 1 {

@@ -131,9 +131,9 @@ func TestCapabilityPlanAllCombinationsAndRegistrationFormula(t *testing.T) {
 				wantCount += 3
 			}
 			if contactsEnabled {
-				wantCount += 4
+				wantCount += 6
 				if globalWrites {
-					wantCount += 3
+					wantCount += 9
 				}
 			}
 			if mailEnabled {

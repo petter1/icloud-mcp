@@ -205,7 +205,7 @@ func (p CapabilityPlan) RegisteredTools() []string {
 		names = append(names, contactsReadToolNames()...)
 	}
 	if p.contactsWrite {
-		names = append(names, "create_contact", "update_contact")
+		names = append(names, contactsWriteToolNames()...)
 	}
 	if p.contactsDelete {
 		names = append(names, "delete_contact")
@@ -245,7 +245,11 @@ func calendarWriteToolNames() []string {
 }
 
 func contactsReadToolNames() []string {
-	return []string{"list_address_books", "search_contacts", "list_contacts", "get_contact"}
+	return []string{"list_address_books", "search_contacts", "list_contacts", "get_contact", "list_groups", "list_group_members"}
+}
+
+func contactsWriteToolNames() []string {
+	return []string{"create_contact", "update_contact", "create_group", "rename_group", "delete_group", "add_to_group", "remove_from_group", "normalize_phones"}
 }
 
 func mailReadToolNames() []string {

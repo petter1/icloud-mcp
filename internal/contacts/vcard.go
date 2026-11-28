@@ -26,6 +26,7 @@ type rawCard struct {
 type rawProperty struct {
 	group     string
 	name      string
+	header    string // unfolded text before the value colon, group and parameters included
 	value     string
 	hasParams bool
 	raw       []byte
@@ -169,6 +170,7 @@ func parseRawProperty(logical, chunks []byte) (rawProperty, error) {
 	return rawProperty{
 		group:     group,
 		name:      strings.ToUpper(name),
+		header:    head,
 		value:     string(logical[colon+1:]),
 		hasParams: len(parts) > 1,
 		raw:       append([]byte(nil), chunks...),
@@ -321,8 +323,16 @@ func validateRawCard(raw *rawCard) error {
 	if !displayName {
 		return invalidCardError()
 	}
+	group := false
+	for _, property := range raw.properties {
+		if property.name == appleGroupField && strings.EqualFold(strings.TrimSpace(property.value), "group") {
+			group = true
+		}
+	}
 	for _, property := range names {
-		if countUnescaped(property.value, ';') != 4 {
+		// Apple group vCards usually carry a plain N:<group name>; the group
+		// name is read from FN, so only contacts need the five N components.
+		if !group && countUnescaped(property.value, ';') != 4 {
 			return invalidCardError()
 		}
 	}

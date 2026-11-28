@@ -8,6 +8,7 @@ import (
 )
 
 type budgetContactsService struct {
+	groupServiceStub
 	books     []contacts.AddressBook
 	cards     int
 	bytes     int64

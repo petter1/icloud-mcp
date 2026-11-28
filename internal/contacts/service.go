@@ -199,4 +199,11 @@ type Service interface {
 	CreateContact(ctx context.Context, input *CreateContactInput) (CreateResult, error)
 	UpdateContact(ctx context.Context, input *UpdateContactInput) (UpdateResult, error)
 	DeleteContact(ctx context.Context, input *DeleteContactInput) (DeleteResult, error)
+	ListGroups(ctx context.Context, addressBook string) (GroupList, error)
+	ListGroupMembers(ctx context.Context, addressBook, uid string) (GroupMembers, error)
+	CreateGroup(ctx context.Context, addressBook, name string) (Group, error)
+	RenameGroup(ctx context.Context, input *RenameGroupInput) (RenameGroupResult, error)
+	DeleteGroup(ctx context.Context, input *DeleteGroupInput) (DeleteGroupResult, error)
+	ChangeGroupMembers(ctx context.Context, input *GroupMembershipInput) (GroupMembershipResult, error)
+	NormalizePhones(ctx context.Context, input *NormalizePhonesInput) (NormalizePhonesResult, error)
 }

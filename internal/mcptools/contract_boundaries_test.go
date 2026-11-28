@@ -86,7 +86,7 @@ func contractBoundValue(property contractProperty, keyword string, number json.N
 	return strings.Repeat("x", n)
 }
 
-func contractBoundRuntime(t *testing.T, args map[string]any) *contractRuntime {
+func contractBoundRuntime(t *testing.T, name string, args map[string]any) *contractRuntime {
 	t.Helper()
 	return newContractRuntime(t, contractProfile{plan: NewCapabilityPlan(false, true, true, true, true)}, func(f *contractRuntime) {
 		if path, ok := args["calendar"].(string); ok && strings.HasPrefix(path, "/cal/") {
@@ -102,9 +102,21 @@ func contractBoundRuntime(t *testing.T, args map[string]any) *contractRuntime {
 			}
 			f.calendar.objects = objects
 		}
+		// Group tools address a group fixture by uid; normalize_phones by group_uid.
+		target, _ := contractBusinessFixtures()[name].base["uid"].(string)
+		if target == "" {
+			target = "contact"
+		}
+		rewrite := map[string]string{}
 		if uid, ok := args["uid"].(string); ok {
+			rewrite[target] = uid
+		}
+		if uid, ok := args["group_uid"].(string); ok {
+			rewrite["group"] = uid
+		}
+		for from, to := range rewrite {
 			for path, object := range f.contacts.objects {
-				f.contacts.objects[path] = strings.ReplaceAll(object, "UID:contact\r\n", "UID:"+uid+"\r\n")
+				f.contacts.objects[path] = strings.ReplaceAll(object, "UID:"+from+"\r\n", "UID:"+to+"\r\n")
 			}
 		}
 		if value, ok := args["mailbox"].(string); ok {
@@ -160,7 +172,7 @@ func TestContractExactPublishedBoundaries(t *testing.T) {
 						if keyword == "maxItems" && (property.path[0] == "cc" || property.path[0] == "bcc") {
 							delete(args, "to")
 						}
-						f := contractBoundRuntime(t, args)
+						f := contractBoundRuntime(t, name, args)
 						if err := contractCompileSchema(t, contractInputSchema(t, tool)).Validate(contractValue(args)); err != nil {
 							t.Fatalf("exact boundary fixture violates published schema: %v", err)
 						}

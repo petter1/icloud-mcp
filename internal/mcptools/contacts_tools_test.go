@@ -21,6 +21,7 @@ import (
 const contactsTestBook = "book-AAAAAAAAAAAAAAAAAAAAAA"
 
 type fakeContactsService struct {
+	groupServiceStub
 	mu sync.Mutex
 
 	books        []contacts.AddressBook
@@ -152,15 +153,15 @@ func contactsErrorPayloadFromResult(t *testing.T, result *mcp.CallToolResult) to
 }
 
 func TestContactsRegisterCountsSchemasAndAnnotations(t *testing.T) {
-	readNames := []string{"list_address_books", "search_contacts", "list_contacts", "get_contact"}
-	writeNames := []string{"create_contact", "update_contact", "delete_contact"}
+	readNames := []string{"list_address_books", "search_contacts", "list_contacts", "get_contact", "list_groups", "list_group_members"}
+	writeNames := []string{"create_contact", "update_contact", "delete_contact", "create_group", "rename_group", "delete_group", "add_to_group", "remove_from_group", "normalize_phones"}
 	for _, test := range []struct {
 		name        string
 		allowWrites bool
 		wantCount   int
 	}{
-		{name: "read only", allowWrites: false, wantCount: 4},
-		{name: "read write", allowWrites: true, wantCount: 7},
+		{name: "read only", allowWrites: false, wantCount: 6},
+		{name: "read write", allowWrites: true, wantCount: 15},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			mcpServer := server.NewMCPServer("contacts-test", "0", server.WithToolCapabilities(false))
@@ -193,6 +194,14 @@ func TestContactsRegisterCountsSchemasAndAnnotations(t *testing.T) {
 		"create_contact":     newCreateContactTool(),
 		"update_contact":     newUpdateContactTool(),
 		"delete_contact":     newDeleteContactTool(),
+		"list_groups":        newListGroupsTool(),
+		"list_group_members": newListGroupMembersTool(),
+		"create_group":       newCreateGroupTool(),
+		"rename_group":       newRenameGroupTool(),
+		"delete_group":       newDeleteGroupTool(),
+		"add_to_group":       newGroupMembershipTool(true),
+		"remove_from_group":  newGroupMembershipTool(false),
+		"normalize_phones":   newNormalizePhonesTool(),
 	}
 	wantRequired := map[string][]string{
 		"list_address_books": {},
@@ -202,6 +211,14 @@ func TestContactsRegisterCountsSchemasAndAnnotations(t *testing.T) {
 		"create_contact":     {"address_book"},
 		"update_contact":     {"address_book", "uid"},
 		"delete_contact":     {"address_book", "uid"},
+		"list_groups":        {},
+		"list_group_members": {"address_book", "uid"},
+		"create_group":       {"address_book", "name"},
+		"rename_group":       {"address_book", "uid", "name"},
+		"delete_group":       {"address_book", "uid"},
+		"add_to_group":       {"address_book", "uid", "contact_uids"},
+		"remove_from_group":  {"address_book", "uid", "contact_uids"},
+		"normalize_phones":   {"address_book"},
 	}
 	wantIdempotent := map[string]bool{
 		"list_address_books": true,
@@ -211,6 +228,14 @@ func TestContactsRegisterCountsSchemasAndAnnotations(t *testing.T) {
 		"create_contact":     false,
 		"update_contact":     false,
 		"delete_contact":     true,
+		"list_groups":        true,
+		"list_group_members": true,
+		"create_group":       false,
+		"rename_group":       true,
+		"delete_group":       true,
+		"add_to_group":       true,
+		"remove_from_group":  true,
+		"normalize_phones":   true,
 	}
 	for name, tool := range tools {
 		if !strings.Contains(strings.ToLower(tool.Description), "untrusted") {
@@ -226,7 +251,7 @@ func TestContactsRegisterCountsSchemasAndAnnotations(t *testing.T) {
 		if tool.Annotations.ReadOnlyHint == nil || *tool.Annotations.ReadOnlyHint != readOnly {
 			t.Errorf("%s readOnlyHint is incorrect", name)
 		}
-		wantDestructive := name == "delete_contact" || name == "update_contact"
+		wantDestructive := map[string]bool{"delete_contact": true, "update_contact": true, "rename_group": true, "delete_group": true, "remove_from_group": true, "normalize_phones": true}[name]
 		if tool.Annotations.DestructiveHint == nil || *tool.Annotations.DestructiveHint != wantDestructive {
 			t.Errorf("%s destructiveHint is incorrect", name)
 		}

@@ -193,6 +193,7 @@ func newPaginationClient(counters *paginationCounters) (*contacts.Client, *pagin
 // removes the read rate limit from cursor tests that exercise the codec alone,
 // because each search costs several REPORT requests on the real client.
 type paginationFakeService struct {
+	groupServiceStub
 	rows []contacts.ContactSummary
 
 	mu       sync.Mutex

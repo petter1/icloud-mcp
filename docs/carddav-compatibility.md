@@ -11,7 +11,7 @@ This document is Contacts-specific. Calendar uses the separate CalDAV client in
 | Endpoints | `contacts.icloud.com` and `p[0-9]{1,3}-contacts.icloud.com:443` |
 | Authentication | HTTP Basic with `ICLOUD_EMAIL` and `ICLOUD_PASSWORD` |
 | Reads | vCard 3.0 and 4.0; PHOTO bytes omitted |
-| Writes | vCard 3.0 with strong `If-Match`; vCard 4.0 and groups are read-only |
+| Writes | vCard 3.0 with strong `If-Match`; vCard 4.0 is read-only; groups change only through the group tools |
 | Search | Server prefilter plus local re-filter; digit-normalized phone matching |
 | Limits | 100 books; 2,000 cards per search; 60 reads and 20 writes per minute |
 
@@ -94,8 +94,14 @@ it returns or changes the contact.
   unknown properties that fit the resource limit.
 - vCard 4.0 objects are read-only. This rule prevents a silent downgrade through
   the 3.0 encoder.
-- Apple group cards are readable and excluded from search by default. The server
-  rejects group mutation.
+- Apple group cards are readable and excluded from search by default.
+  `update_contact` and `delete_contact` reject them. The group tools
+  (`create_group`, `rename_group`, `delete_group`, `add_to_group`,
+  `remove_from_group`) write only the group vCard: `FN`/`N` for the name and
+  one `X-ADDRESSBOOKSERVER-MEMBER:urn:uuid:<UID>` line per member, every other
+  line byte for byte, with a strong `If-Match`. A group `N` may hold only the
+  group name, as Apple writes it. `normalize_phones` rewrites only the value of
+  matching `TEL` lines; group prefix and parameters stay.
 - The result includes a birthday only when it is a valid `YYYY-MM-DD` value.
   Unsupported forms produce `unsupportedFields: ["birthday"]` without the raw
   value.

@@ -88,8 +88,8 @@ func TestICloudCapabilitiesReadOnlyEffectiveGroups(t *testing.T) {
 	if !response.CapabilityGroups.CalendarRead || !response.CapabilityGroups.ContactsRead || !response.CapabilityGroups.MailRead {
 		t.Errorf("read-only domain reads are not reported: %#v", response.CapabilityGroups)
 	}
-	if response.ToolCount != 14 {
-		t.Fatalf("all-domain read-only count = %d, want 14", response.ToolCount)
+	if response.ToolCount != 16 {
+		t.Fatalf("all-domain read-only count = %d, want 16", response.ToolCount)
 	}
 }
 

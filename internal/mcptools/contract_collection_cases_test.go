@@ -71,7 +71,7 @@ func TestContractBooleanAndArrayItems(t *testing.T) {
 							t.Run(fmt.Sprintf("item-enum-%d", i), func(t *testing.T) {
 								a := contractClone(seed.arguments(name, key))
 								a[key] = []any{value}
-								fresh := contractBoundRuntime(t, a)
+								fresh := contractBoundRuntime(t, name, a)
 								res := fresh.call(t, name, a)
 								if res.IsError {
 									t.Fatalf("item enum rejected: %s", resultText(t, res))
@@ -92,7 +92,7 @@ func TestContractBooleanAndArrayItems(t *testing.T) {
 								a := contractClone(seed.arguments(name, key))
 								value := contractBoundValue(contractProperty{path: []string{key, "*"}, schema: items}, bound, raw, a[key].([]any)[0])
 								a[key] = []any{value}
-								fresh := contractBoundRuntime(t, a)
+								fresh := contractBoundRuntime(t, name, a)
 								res := fresh.call(t, name, a)
 								if res.IsError {
 									t.Fatalf("exact item bound rejected: %s", resultText(t, res))

@@ -66,6 +66,7 @@ func contractCounterCorpus(f *contractRuntime, name, key string) {
 	if name == "search_contacts" {
 		if key == "include_groups" {
 			f.contacts.objects[contractBookPath+"group.vcf"] = "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:group\r\nFN:Synthetic Group\r\nN:Group;Synthetic;;;\r\nKIND:group\r\nEND:VCARD\r\n"
+			delete(f.contacts.objects, contractBookPath+"empty.vcf")
 			return
 		}
 		if key == "limit" {

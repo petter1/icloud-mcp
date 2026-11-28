@@ -118,13 +118,17 @@ The global switch removes handlers rather than returning a runtime disabled
 error:
 
 - Calendar: `create_event`, `update_event`, `delete_event` are absent.
-- Contacts: `create_contact`, `update_contact`, `delete_contact` are absent.
+- Contacts: `create_contact`, `update_contact`, `delete_contact`,
+  `create_group`, `rename_group`, `delete_group`, `add_to_group`,
+  `remove_from_group`, and `normalize_phones` are absent.
 - Mail: `set_message_flags`, `move_message`, `create_mailbox`,
   `move_messages`, `trash_message`, `send_message`, and `reply_message` are
   absent.
 
 Contacts read requires its enable flag. Mail read requires its enable flag.
-Contacts writes require `contacts.write` or `contacts.delete`. Mail mutation
+Contacts writes require `contacts.write` or `contacts.delete`. The group tools
+and `normalize_phones` use `contacts.write`: they edit only group vCards or TEL
+values with a strong If-Match and never delete a contact. Mail mutation
 requires `mail.mutate` or `mail.trash`. Mail send requires `mail.send` and a
 valid SMTP recipient policy. The legacy Mail write and send flags never grant a
 tool. Mail read does not enable mutation or send. Mail mutation does not enable
