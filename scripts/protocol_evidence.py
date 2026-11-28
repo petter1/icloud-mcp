@@ -30,7 +30,7 @@ CALENDAR_READS = {
     "validate_event", "calendar_capabilities", "icloud_capabilities",
 }
 CALENDAR_WRITES = {"create_event", "update_event", "delete_event"}
-CONTACT_READS = {"list_address_books", "search_contacts", "get_contact"}
+CONTACT_READS = {"list_address_books", "search_contacts", "list_contacts", "get_contact"}
 CONTACT_WRITES = {"create_contact", "update_contact", "delete_contact"}
 MAIL_READS = {"list_mailboxes", "search_messages", "get_message"}
 MAIL_WRITES = {"set_message_flags", "move_message", "create_mailbox", "move_messages", "trash_message", "send_message", "reply_message"}

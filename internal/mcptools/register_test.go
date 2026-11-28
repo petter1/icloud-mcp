@@ -131,7 +131,7 @@ func TestCapabilityPlanAllCombinationsAndRegistrationFormula(t *testing.T) {
 				wantCount += 3
 			}
 			if contactsEnabled {
-				wantCount += 3
+				wantCount += 4
 				if globalWrites {
 					wantCount += 3
 				}

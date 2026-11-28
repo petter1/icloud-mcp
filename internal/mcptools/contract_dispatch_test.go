@@ -114,6 +114,7 @@ func contractBusinessFixtures() map[string]contractBusinessFixture {
 		"update_contact":    {map[string]any{"address_book": "$book", "uid": "contact", "display_name": "Changed"}, contractMerge(contractOmit(contact, "client_uid"), map[string]any{"etag": contractETag, "idempotency_key": "update-key"})},
 		"delete_contact":    {book, map[string]any{"etag": contractETag, "dry_run": true}},
 		"search_contacts":   {map[string]any{}, map[string]any{"address_book": "$book", "query": "Synthetic", "email": "reply", "phone": "1234", "include_groups": true, "limit": 1, "cursor": "start"}},
+		"list_contacts":     {map[string]any{}, map[string]any{"address_book": "$book", "limit": 1, "offset": 0}},
 		"get_message":       {identity(), map[string]any{"max_body_bytes": 4, "allow_html_fallback": true}},
 		"search_messages":   {map[string]any{"mailbox": "INBOX"}, map[string]any{"query": "Synthetic", "from": "reply", "to": "fixture", "subject": "Synthetic", "since": "2026-07-01", "before": "2026-07-03", "unseen_only": true, "flagged_only": true, "before_uid": 3, "uid_validity": 9, "limit": 1}},
 		"set_message_flags": {contractMerge(identity(), map[string]any{"operation": "add", "flags": []any{"seen"}}), map[string]any{"expected_modseq": 42}},
@@ -277,7 +278,7 @@ func (f *contractRuntime) verify(t *testing.T, name string, args map[string]any,
 		if payload["count"] != float64(1) {
 			t.Fatalf("actual discovered books lost: %v", payload)
 		}
-	case "list_calendars", "list_mailboxes", "search_events", "search_contacts", "search_messages", "find_free_slots":
+	case "list_calendars", "list_mailboxes", "search_events", "search_contacts", "list_contacts", "search_messages", "find_free_slots":
 		if len(f.calendar.requests) == 0 && len(f.contacts.requests) <= 3 && f.mail.imapDials == 0 {
 			t.Fatal("domain dispatch did not consult the real service backend")
 		}

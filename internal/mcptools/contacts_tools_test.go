@@ -152,15 +152,15 @@ func contactsErrorPayloadFromResult(t *testing.T, result *mcp.CallToolResult) to
 }
 
 func TestContactsRegisterCountsSchemasAndAnnotations(t *testing.T) {
-	readNames := []string{"list_address_books", "search_contacts", "get_contact"}
+	readNames := []string{"list_address_books", "search_contacts", "list_contacts", "get_contact"}
 	writeNames := []string{"create_contact", "update_contact", "delete_contact"}
 	for _, test := range []struct {
 		name        string
 		allowWrites bool
 		wantCount   int
 	}{
-		{name: "read only", allowWrites: false, wantCount: 3},
-		{name: "read write", allowWrites: true, wantCount: 6},
+		{name: "read only", allowWrites: false, wantCount: 4},
+		{name: "read write", allowWrites: true, wantCount: 7},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			mcpServer := server.NewMCPServer("contacts-test", "0", server.WithToolCapabilities(false))
@@ -188,6 +188,7 @@ func TestContactsRegisterCountsSchemasAndAnnotations(t *testing.T) {
 	tools := map[string]mcp.Tool{
 		"list_address_books": newListAddressBooksTool(),
 		"search_contacts":    newSearchContactsTool(),
+		"list_contacts":      newListContactsTool(),
 		"get_contact":        newGetContactTool(),
 		"create_contact":     newCreateContactTool(),
 		"update_contact":     newUpdateContactTool(),
@@ -196,6 +197,7 @@ func TestContactsRegisterCountsSchemasAndAnnotations(t *testing.T) {
 	wantRequired := map[string][]string{
 		"list_address_books": {},
 		"search_contacts":    {},
+		"list_contacts":      {},
 		"get_contact":        {"address_book", "uid"},
 		"create_contact":     {"address_book"},
 		"update_contact":     {"address_book", "uid"},
@@ -204,6 +206,7 @@ func TestContactsRegisterCountsSchemasAndAnnotations(t *testing.T) {
 	wantIdempotent := map[string]bool{
 		"list_address_books": true,
 		"search_contacts":    true,
+		"list_contacts":      true,
 		"get_contact":        true,
 		"create_contact":     false,
 		"update_contact":     false,

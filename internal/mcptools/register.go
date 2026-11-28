@@ -245,7 +245,7 @@ func calendarWriteToolNames() []string {
 }
 
 func contactsReadToolNames() []string {
-	return []string{"list_address_books", "search_contacts", "get_contact"}
+	return []string{"list_address_books", "search_contacts", "list_contacts", "get_contact"}
 }
 
 func mailReadToolNames() []string {

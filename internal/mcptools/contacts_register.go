@@ -16,8 +16,9 @@ func RegisterContacts(s *server.MCPServer, deps ContactsDeps, allowRead, allowWr
 	if allowRead {
 		s.AddTool(newListAddressBooksTool(), listAddressBooksHandler(deps))
 		s.AddTool(newSearchContactsTool(), searchContactsHandler(deps))
+		s.AddTool(newListContactsTool(), listContactsHandler(deps))
 		s.AddTool(newGetContactTool(), getContactHandler(deps))
-		names = append(names, "list_address_books", "search_contacts", "get_contact")
+		names = append(names, "list_address_books", "search_contacts", "list_contacts", "get_contact")
 	}
 	if allowWrite {
 		s.AddTool(newCreateContactTool(), createContactHandler(deps))

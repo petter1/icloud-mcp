@@ -7,6 +7,12 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- Add `list_contacts` to the Contacts read group (`contacts.read`). It lists
+  every contact summary (groups excluded) in the authorized address books,
+  sorted like `search_contacts`, with `offset`/`limit` paging (default 100,
+  maximum 500), `total`, `hasMore`, and `nextOffset`. A page can hold fewer
+  rows when the 256 KiB result budget is reached. The scan keeps the existing
+  2,000-card bound and reports `scanLimitReached` when it stops early.
 - Add `create_mailbox` to the Mail mutation group (`mail.mutate`). It creates
   one mailbox with an exact name and returns `created=false` without sending
   CREATE when a selectable mailbox with that name exists. It rejects INBOX,
